@@ -1,13 +1,13 @@
 ion-content {
-  --background: #f4f5f8;
+  --background: #ECF0F1;
 }
 
 .header-content {
-  background: #fff;
+  background: #3498DB;
   padding: 20px;
   border-bottom-left-radius: 20px;
   border-bottom-right-radius: 20px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 10px rgba(224, 92, 92, 0.08);
 }
 
 .top-buttons {
@@ -19,8 +19,9 @@ ion-content {
   ion-button {
     text-transform: none;
     font-weight: bold;
+    color: #ECF0F1;
     &.active {
-      --background: #252424;
+      --background: #2ECC71;
       --color: #fff;
       border-radius: 20px;
     }
@@ -28,7 +29,7 @@ ion-content {
 
   .filter-button {
     margin-left: auto;
-    --color: #555;
+    --color: #fff;
     font-size: 1.5rem;
   }
 }
@@ -45,15 +46,16 @@ ion-content {
   
   h2 {
     font-weight: bold;
-    color: #333;
+    color: #ECF0F1;
     margin-top: 0;
   }
 }
 
 ion-card {
-  margin-top: 20px;
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  background-color: #fcfcff;
+  margin-top: 20px 16px;
+  border-radius: 15px;
+  box-shadow: 0 6px 15px rgba(7, 177, 49, 0);
 }
 
 ion-item {
@@ -101,7 +103,7 @@ ion-item {
   .evaluation-text {
     font-weight: bold;
     font-size: 1.1em;
-    color: #333;
+    color: #34495E;
     margin-top: 0;
     margin-bottom: 5px;
   }
@@ -128,6 +130,6 @@ ion-tab-bar {
 
 ion-tab-button {
   --color: #888;
-  --color-selected: #000;
+  --color-selected: #3498DB;
   font-size: 0.8em;
 }
