@@ -1,13 +1,3 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>Inicio</ion-title>
-    <ion-buttons slot="end">
-      <ion-button routerLink="/calendar">
-        <ion-icon slot="icon-only" name="calendar-outline"></ion-icon>
-      </ion-button>
-    </ion-buttons>
-  </ion-toolbar>
-</ion-header>
 
 <ion-content [fullscreen]="true">
   <div class="header-content">
@@ -19,11 +9,11 @@
       </ion-button>
     </div>
     <div class="main-info">
-      <img src="https://i.ibb.co/6zC1mYv/libro.png" alt="Icono de un libro abierto" class="book-icon">
-      <h2>Tienes 2 seguimientos</h2>
+      <img src="assets/icon/medic_png.png" alt="Icono de un libro abierto" class="book-icon">
+      <h2>Medic_App</h2>
     </div>
   </div>
-
+<br>
   <ion-card>
     <ion-item>
       <div class="card-content-wrapper">
@@ -33,22 +23,21 @@
           <p class="location-text">Departamento cerca de Aeropuerto</p>
         </div>
         <div class="image-wrapper">
-          <img src="https://i.ibb.co/3sX8M8z/fred.jpg" alt="Foto de Frédéric">
+          <img src="assets/icon/medic_png.png" alt="Foto de Frédéric">
         </div>
       </div>
     </ion-item>
   </ion-card>
-
+<br>
   <ion-card>
     <ion-item>
       <div class="card-content-wrapper">
         <div class="text-content">
-          <div class="rating-stars">★★★★★</div>
           <p class="evaluation-text">Lee la evaluación de 5 estrellas de Mirko</p>
           <p class="location-text">Departamento cerca de Aeropuerto</p>
         </div>
         <div class="image-wrapper">
-          <img src="https://i.ibb.co/808b88v/mirko.jpg" alt="Foto de Mirko">
+          <img src="assets/icon/medic_png.png" alt="Foto de Mirko">
         </div>
       </div>
     </ion-item>
@@ -63,9 +52,9 @@
   </ion-tab-button>
 
   <ion-tab-button tab="calendar" routerLink="/calendar">
-    <ion-icon name="calendar-outline"></ion-icon>
-    <ion-label>Calendario</ion-label>
-  </ion-tab-button>
+  <img src="assets/icon/calendar_icon.png" alt="Calendario" class="tab-icon">
+  <ion-label>Calendario</ion-label>
+</ion-tab-button>
 
   <ion-tab-button tab="anuncios">
     <ion-icon name="megaphone-outline"></ion-icon>
