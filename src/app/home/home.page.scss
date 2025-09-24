@@ -1,27 +1,133 @@
-#container {
+ion-content {
+  --background: #f4f5f8;
+}
+
+.header-content {
+  background: #fff;
+  padding: 20px;
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.top-buttons {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  margin-bottom: 20px;
+
+  ion-button {
+    text-transform: none;
+    font-weight: bold;
+    &.active {
+      --background: #252424;
+      --color: #fff;
+      border-radius: 20px;
+    }
+  }
+
+  .filter-button {
+    margin-left: auto;
+    --color: #555;
+    font-size: 1.5rem;
+  }
+}
+
+.main-info {
   text-align: center;
-
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
+  padding: 20px 0;
+  
+  .book-icon {
+    width: 100px;
+    height: auto;
+    margin-bottom: 10px;
+  }
+  
+  h2 {
+    font-weight: bold;
+    color: #333;
+    margin-top: 0;
+  }
 }
 
-#container strong {
-  font-size: 20px;
-  line-height: 26px;
+ion-card {
+  margin-top: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-#container p {
-  font-size: 16px;
-  line-height: 22px;
-
-  color: #8c8c8c;
-
-  margin: 0;
+ion-item {
+  --background: transparent;
+  --inner-padding-end: 0;
+  --padding-start: 16px;
+  --padding-end: 16px;
 }
 
-#container a {
-  text-decoration: none;
+.card-content-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+
+  .text-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .image-wrapper {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    overflow: hidden;
+    margin-left: 10px;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  .days-left {
+    color: #888;
+    font-size: 0.8em;
+    font-weight: bold;
+    margin-top: 0;
+    margin-bottom: 5px;
+  }
+
+  .evaluation-text {
+    font-weight: bold;
+    font-size: 1.1em;
+    color: #333;
+    margin-top: 0;
+    margin-bottom: 5px;
+  }
+
+  .location-text {
+    color: #888;
+    font-size: 0.9em;
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+
+  .rating-stars {
+    color: #ffc900;
+    font-size: 1.1em;
+    margin-bottom: 5px;
+  }
+}
+
+ion-tab-bar {
+  --background: #fff;
+  border-top: none;
+  padding: 5px 0;
+}
+
+ion-tab-button {
+  --color: #888;
+  --color-selected: #000;
+  font-size: 0.8em;
 }
