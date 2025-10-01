@@ -1,0 +1,116 @@
+/* ========================================================================= */
+/* VARIABLES GLOBALES Y FONDO */
+/* ========================================================================= */
+ion-content {
+  /* Fondo claro de referencia */
+  --background: #ECF0F1;
+}
+
+/* ========================================================================= */
+/* ESTILOS DE LA CABECERA (HEADER/TOOLBAR) */
+/* ========================================================================= */
+ion-header ion-toolbar {
+  /* El color principal de tu referencia */
+  --background: #3498DB;
+  /* Color del texto */
+  --color: #ECF0F1;
+}
+
+/* ========================================================================= */
+/* ESTILOS DE LA TARJETA (CARD) */
+/* ========================================================================= */
+ion-card {
+  /* Fondo de tarjeta de referencia */
+  background-color: #fcfcff;
+  /* Redondeo de la tarjeta de referencia */
+  border-radius: 15px;
+  /* Sombra más sutil */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  /* Ajuste de margen para que se vea bien en el ion-content con padding */
+  margin: 0;
+}
+
+ion-card-title {
+  /* Color de texto principal de tu referencia */
+  color: #34495E;
+  font-weight: bold;
+}
+
+/* ========================================================================= */
+/* ESTILOS DE LOS CAMPOS DE ENTRADA (ION-ITEM) */
+/* ========================================================================= */
+ion-item {
+  /* Fondo transparente para ion-item dentro de ion-card */
+  --background: transparent;
+  /* Usar el color principal para las etiquetas flotantes */
+  --color: #3498DB; 
+  /* Estilo visual para la línea inferior de la entrada */
+  --highlight-color-focused: #3498DB;
+  --highlight-color-valid: #2ECC71;
+  --inner-border-width: 0 0 1px 0 !important;
+  margin-bottom: 10px;
+}
+
+/* ========================================================================= */
+/* ESTILOS DEL BOTÓN PRINCIPAL (LOGIN) */
+/* ========================================================================= */
+form ion-button {
+  /* El color principal de tu referencia */
+  --background: #3498DB;
+  --background-activated: #2980B9; /* Un tono más oscuro para el estado activo */
+  color: #ECF0F1;
+  font-weight: bold;
+  margin-top: 15px;
+  border-radius: 8px; /* Redondeo unificado para botones */
+}
+
+/* ========================================================================= */
+/* ESTILOS DEL SEPARADOR "O" */
+/* ========================================================================= */
+.separator-wrapper {
+  /* Centrado del separador */
+  display: flex;
+  justify-content: center; 
+  align-items: center; 
+  width: 100%; 
+}
+
+.text-center {
+  /* Estilos para el texto 'O' */
+  color: #888; /* Un color neutro de tu referencia */
+  font-weight: bold;
+  padding: 5px 0;
+  margin: 15px 0;
+}
+
+/* ========================================================================= */
+/* ESTILOS DEL BOTÓN DE GOOGLE */
+/* ========================================================================= */
+.google-signin-btn {
+  /* Botón más delgado, fondo blanco con borde sutil */
+  --background: #ffffff;
+  --color: #333333;
+  --border-color: #cccccc;
+  --border-style: solid;
+  --border-width: 1px;
+  --padding-top: 10px;
+  --padding-bottom: 10px;
+  border-radius: 8px; /* Redondeo unificado */
+}
+
+.google-logo {
+  /* Logo pequeño y espaciado */
+  width: 16px; 
+  height: 16px;
+  margin-right: 12px; 
+}
+
+/* ========================================================================= */
+/* ESTILOS DEL BOTÓN DE REGISTRO (ENLACE) */
+/* ========================================================================= */
+ion-content > ion-button[fill="clear"] {
+  /* Color de enlace principal de tu referencia */
+  --color: #3498DB;
+  font-weight: 500;
+  margin-top: 20px;
+}

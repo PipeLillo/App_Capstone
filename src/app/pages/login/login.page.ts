@@ -27,19 +27,19 @@ export class LoginPage implements OnInit {
   // ❌ ATENCIÓN: Por favor, elimina este bloque manualmente antes de subir a Git.
   // Este es el único lugar donde se definen las claves para que puedas borrarlas fácilmente.
   // Para una seguridad óptima, se recomienda usar un archivo .env.
-  private API_KEYS = {
-    firebaseConfig: {
-      apiKey: "",
-      authDomain: "",
-      projectId: "",
-      storageBucket: "",
-      messagingSenderId: "",
-      appId: "",
-      measurementId: ""
-    },
-    azureFunctionUrl: '',
-    azureFunctionKey: ''
-  };
+   private API_KEYS = {
+  firebaseConfig: {
+   apiKey: "",
+   authDomain: "",
+   projectId: "",
+   storageBucket: "",
+   messagingSenderId: "",
+   appId: "",
+   measurementId: ""
+  },
+  azureFunctionUrl: '',
+  azureFunctionKey: ''
+ };
 
   private firebaseConfig = this.API_KEYS.firebaseConfig;
   private auth: any;

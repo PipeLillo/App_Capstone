@@ -29,10 +29,13 @@ ion-content {
 
   .filter-button {
     margin-left: auto;
+    --background: #2ECC71;
     --color: #fff;
-    font-size: 1.5rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
   }
 }
+
 
 .main-info {
   text-align: center;

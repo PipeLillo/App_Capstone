@@ -11,7 +11,6 @@
     </ion-card-header>
 
     <ion-card-content>
-      <!-- Formulario de Correo y Contraseña -->
       <form>
         <ion-item>
           <ion-label position="floating">Correo Electrónico</ion-label>
@@ -26,14 +25,15 @@
         <ion-button expand="block" (click)="login()">Iniciar Sesión</ion-button>
       </form>
       
-      <!-- Separador visual -->
-      <p class="text-center my-4 text-gray-400">o</p>
+      <div class="separator-wrapper">
+        <p class="text-center my-4 text-gray-400">O</p>
+      </div>
 
-      <!-- Botón de Google Autenticado por Firebase -->
-      <ion-button expand="block" (click)="signInWithGoogle()">
-        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo" class="w-5 h-5 mr-3">
+      <ion-button expand="block" class="google-signin-btn" (click)="signInWithGoogle()">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo" class="google-logo">
         Iniciar Sesión con Google
       </ion-button>
+
     </ion-card-content>
   </ion-card>
   
