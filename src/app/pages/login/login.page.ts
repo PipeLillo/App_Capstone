@@ -124,3 +124,4 @@ export class LoginPage implements OnInit {
     // Aquí iría tu lógica de autenticación tradicional
   }
 }
+

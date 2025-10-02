@@ -1,33 +1,15 @@
 <ion-header>
-  <ion-toolbar>
-    <ion-title>Inicio de Sesión</ion-title>
-  </ion-toolbar>
+  
 </ion-header>
 
 <ion-content class="ion-padding">
   <ion-card>
     <ion-card-header>
-      <ion-card-title>Bienvenido</ion-card-title>
+      <ion-card-title style="text-align: center;">Bienvenido  MyZenit</ion-card-title>
     </ion-card-header>
+    <br><br><br>
 
     <ion-card-content>
-      <form>
-        <ion-item>
-          <ion-label position="floating">Correo Electrónico</ion-label>
-          <ion-input type="email" [(ngModel)]="email" name="email"></ion-input>
-        </ion-item>
-
-        <ion-item>
-          <ion-label position="floating">Contraseña</ion-label>
-          <ion-input type="password" [(ngModel)]="password" name="password"></ion-input>
-        </ion-item>
-
-        <ion-button expand="block" (click)="login()">Iniciar Sesión</ion-button>
-      </form>
-      
-      <div class="separator-wrapper">
-        <p class="text-center my-4 text-gray-400">O</p>
-      </div>
 
       <ion-button expand="block" class="google-signin-btn" (click)="signInWithGoogle()">
         <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo" class="google-logo">
@@ -37,7 +19,5 @@
     </ion-card-content>
   </ion-card>
   
-  <ion-button expand="block" fill="clear" routerLink="/register">
-    ¿No tienes una cuenta? Regístrate aquí.
-  </ion-button>
+  
 </ion-content>

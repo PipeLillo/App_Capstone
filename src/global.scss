@@ -35,3 +35,27 @@
 /* @import "@ionic/angular/css/palettes/dark.always.css"; */
 /* @import "@ionic/angular/css/palettes/dark.class.css"; */
 @import '@ionic/angular/css/palettes/dark.system.css';
+
+/* ----------------------------------------------------------------------
+   ESTILO GLOBAL PARA ALERTA DE FECHA SELECCIONADA (Clase: red-alert-text)
+   ----------------------------------------------------------------------
+*/
+
+.red-alert-text {
+  /* Controla el color del botón, el header y el sub-header (propiedad variable de Ionic) */
+  color: #c0392b; /* Rojo para encabezados */
+}
+
+/* 1. Estilo para el texto del mensaje (donde aparece la fecha) */
+/* El selector .alert-message es interno de Ionic y es donde se pone la fecha */
+.red-alert-text .alert-message {
+  color: #00da00 !important; /* Rojo claro y brillante para el mensaje */
+  font-weight: bold; /* Opcional: para que el texto sea más fácil de leer */
+  font-size: 1.1em;
+}
+
+/* 2. Estilo para el subtítulo, si decides usarlo */
+.red-alert-text .alert-sub-title {
+  color: #c0392b; /* Rojo oscuro para el subtítulo */
+}
+

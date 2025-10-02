@@ -1,10 +1,55 @@
-/* ========================================================================= */
-/* VARIABLES GLOBALES Y FONDO */
-/* ========================================================================= */
+/* --- ESTILO DE FONDO Y CONTENEDOR --- */
+
+/* 1. Resetear el fondo de Ionic y preparar la posición relativa para la capa de fondo */
 ion-content {
-  /* Fondo claro de referencia */
-  --background: #ECF0F1;
+  --background: transparent; 
+  position: relative; /* Necesario para posicionar correctamente la capa ::before */
 }
+
+/* 2. La capa ::before ahora CONTIENE la imagen y la hace translúcida */
+ion-content::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  
+  /* ******************************************************************* */
+  /* *** La imagen SÓLO se aplica a esta capa, no a ion-content. *** */
+  /* ******************************************************************* */
+  background: url('/assets/images/background3.jpg') no-repeat center center / cover;
+  
+  /* Hacemos la IMAGEN translúcida: solo 40% opaca */
+  opacity: 1; 
+  
+  /* Filtro opcional: puedes desenfocar la imagen aquí también */
+  filter: blur(0.8px); 
+  
+  /* Asegura que la capa de la imagen esté D E B A J O de todo el contenido */
+  z-index: 0; /* Un z-index bajo para que se muestre, pero no interfiera */
+}
+
+
+/* --- Tarjeta de Login (Asegurar que sea opaca) --- */
+
+.login-card {
+  /* MODIFICADO: Cambiado de 'white' a un color blanco con 70% de opacidad (0.7) */
+  background: rgba(255, 255, 255, 0.8); 
+  
+  border-radius: 15px; 
+  padding: 30px 25px;
+  width: 100%;
+  max-width: 400px;
+  
+  /* Reducimos la sombra para que se vea más acorde a un elemento translúcido */
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1); 
+  
+  position: relative; 
+  z-index: 10; 
+}
+
+/* El resto de tus estilos (.login-container, .logo-area, .google-btn, etc.) van aquí. */
 
 /* ========================================================================= */
 /* ESTILOS DE LA CABECERA (HEADER/TOOLBAR) */
@@ -13,21 +58,26 @@ ion-header ion-toolbar {
   /* El color principal de tu referencia */
   --background: #3498DB;
   /* Color del texto */
-  --color: #ECF0F1;
+  --color: #f1ecec;
 }
 
 /* ========================================================================= */
 /* ESTILOS DE LA TARJETA (CARD) */
 /* ========================================================================= */
 ion-card {
-  /* Fondo de tarjeta de referencia */
-  background-color: #fcfcff;
-  /* Redondeo de la tarjeta de referencia */
-  border-radius: 15px;
-  /* Sombra más sutil */
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  /* Ajuste de margen para que se vea bien en el ion-content con padding */
-  margin: 0;
+  /* MODIFICADO: Cambiado de 'white' a un color blanco con 70% de opacidad (0.7) */
+  background: rgba(255, 255, 255, 0.582); 
+  border-radius: 15px; 
+  margin-top: 70%;
+  width: 100%;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+  /* Reducimos la sombra para que se vea más acorde a un elemento translúcido */
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1); 
+  
+  position: relative; 
+  z-index: 10; 
 }
 
 ion-card-title {
@@ -87,15 +137,25 @@ form ion-button {
 /* ESTILOS DEL BOTÓN DE GOOGLE */
 /* ========================================================================= */
 .google-signin-btn {
-  /* Botón más delgado, fondo blanco con borde sutil */
-  --background: #ffffff;
-  --color: #333333;
-  --border-color: #cccccc;
-  --border-style: solid;
-  --border-width: 1px;
-  --padding-top: 10px;
-  --padding-bottom: 10px;
-  border-radius: 8px; /* Redondeo unificado */
+  /* 1. Transparencia: Usamos un fondo blanco con 80% de opacidad (0.8) */
+  /* Si la quieres más transparente, usa un valor más bajo, como 0.5 */
+  --background: rgba(255, 255, 255, 0.6);
+  
+  /* Color del texto del botón (generalmente gris o negro) */
+  --color: #333; 
+  
+  /* 2. Esquinas Redondeadas: Controla la suavidad del borde */
+  --border-radius: 12px; /* Valor en píxeles para esquinas suaves */
+  
+  height: 48px; /* Altura estándar para un botón moderno */
+  font-weight: 600; /* Texto seminegrilla */
+}
+
+/* Ajuste adicional para el logo de Google */
+.google-logo {
+  width: 24px;
+  height: 24px;
+  margin-right: 12px;
 }
 
 .google-logo {

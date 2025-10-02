@@ -30,6 +30,10 @@ export const routes: Routes = [
     path: 'profile',
     loadComponent: () => import('./pages/profile/profile.page').then( m => m.ProfilePage)
   },
+  {
+    path: 'datetime',
+    loadComponent: () => import('./ionic/datetime/datetime.component').then((c) => c.DatetimeComponent)
+  },
  
 
 
