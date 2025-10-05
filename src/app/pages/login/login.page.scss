@@ -1,0 +1,65 @@
+ion-content {
+  --background: transparent;
+  position: relative;
+}
+
+ion-content::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url('/assets/images/background3.jpg') center/cover no-repeat;
+  opacity: 0.9;
+  filter: blur(0.8px);
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* === Contenedor que centra el card === */
+.center-wrap {
+  display: flex;
+  align-items: center;     /* centra verticalmente */
+  justify-content: center; /* centra horizontalmente */
+  height: 100%;            /* ocupa todo el alto */
+  width: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+/* === Tarjeta principal === */
+ion-card {
+  background: rgba(255, 255, 255, 0.82);
+  border-radius: 15px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 400px;
+  padding: 20px;
+  z-index: 10;
+}
+
+ion-card-title {
+  text-align: center;
+  color: #34495E;
+  font-weight: bold;
+}
+
+/* Botón de Google */
+.google-signin-btn {
+  --background: #fff;
+  --color: #000;
+  --border-radius: 12px;
+  --box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  border: 1px solid rgba(0,0,0,0.12);
+  height: 48px;
+  font-weight: 600;
+}
+
+.google-logo {
+  width: 20px;
+  height: 20px;
+  margin-right: 12px;
+}
+
+.error-text {
+  margin-top: 12px;
+  text-align: center;
+}

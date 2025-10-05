@@ -1,0 +1,23 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>Datetime</ion-title>
+
+    <ion-buttons slot="start">
+      <ion-menu-button menu="main"></ion-menu-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding content-center">
+  <div class="calendar-card">
+    <ion-datetime
+      #mainCal
+      id="datetime-primary"
+      presentation="date"
+      locale="es-CL"
+      [highlightedDates]="highlightedDates"
+      (ionChange)="logDateChange($event)">
+      <span slot="time-label">Tiempo</span>
+    </ion-datetime>
+  </div>
+</ion-content>

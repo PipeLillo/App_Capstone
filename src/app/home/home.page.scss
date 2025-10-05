@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 #container {
   text-align: center;
 
@@ -25,3 +26,244 @@
 #container a {
   text-decoration: none;
 }
+=======
+/* Fondo general */
+ion-content {
+  --background: #f5f7fb;
+}
+
+/* =================== Header =================== */
+.header-content {
+  background: linear-gradient(135deg, #3498db, #6c5ce7);
+  padding: 16px 16px 24px;
+  border-bottom-left-radius: 24px;
+  border-bottom-right-radius: 24px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* Botones superiores */
+.top-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+
+  .seg-btn {
+    text-transform: none;
+    font-weight: 700;
+    --color: #ecf0f1;
+    --border-radius: 20px;
+    height: 36px;
+
+    &.active {
+      --background: #2ecc71;
+      --color: #fff;
+    }
+  }
+
+  .filter-button {
+    margin-left: auto;
+    --background: rgba(255, 255, 255, 0.18);
+    --color: #fff;
+    backdrop-filter: blur(4px);
+    --border-radius: 18px;
+    height: 36px;
+  }
+}
+
+/* Marca */
+.main-info {
+  text-align: center;
+  padding-top: 8px;
+
+  .brand-icon {
+    width: 84px;
+    height: 84px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.12);
+    padding: 10px;
+    margin-bottom: 8px;
+  }
+
+  h2 {
+    color: #ffffff;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+    margin: 0;
+  }
+
+  .subtitle {
+    margin: 4px 0 0;
+    color: #e9ecff;
+    font-size: 0.9rem;
+    opacity: 0.95;
+  }
+}
+
+/* =================== Cards stack =================== */
+.cards-stack {
+  padding: 16px;
+}
+
+/* Tarjeta genérica */
+.home-card {
+  border-radius: 16px;
+  margin: 14px 0;
+  background: #ffffff;
+  box-shadow: 0 6px 24px rgba(20, 37, 63, 0.08);
+
+  ion-item {
+    --background: transparent;
+    --inner-padding-end: 0;
+    --padding-start: 16px;
+    --padding-end: 16px;
+  }
+
+  .card-content-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .text-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .eyebrow {
+    color: #6b7a90;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin: 0 0 2px;
+    font-weight: 700;
+  }
+
+  .card-title {
+    color: #203049;
+    margin: 0 0 6px;
+    font-size: 1.1rem;
+    font-weight: 800;
+  }
+
+  .muted {
+    margin: 0 0 6px;
+    color: #708199;
+    font-size: 0.9rem;
+  }
+
+  .bullet-list {
+    margin: 6px 0 10px 0;
+    padding-left: 16px;
+
+    li {
+      color: #3c4a60;
+      margin: 3px 0;
+      line-height: 1.35;
+    }
+  }
+
+  /* Badges */
+  .badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin: 4px 0 6px;
+
+    &.date {
+      background: #eef4ff;
+      color: #3c64ff;
+    }
+
+    &.warning {
+      background: #fff5e6;
+      color: #ff9b32;
+    }
+  }
+
+  /* Imagen del costado */
+  .image-wrapper {
+    width: 64px;
+    height: 64px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #f0f4ff;
+    display: grid;
+    place-items: center;
+
+    &.circle {
+      border-radius: 50%;
+      background: #f2f7ff;
+    }
+
+    &.soft {
+      background: #f8faff;
+    }
+
+    img {
+      width: 80%;
+      height: 80%;
+      object-fit: contain;
+    }
+  }
+
+  /* Barra de progreso simple (sin componentes extra) */
+  .progress {
+    height: 8px;
+    background: #eef2f7;
+    border-radius: 999px;
+    overflow: hidden;
+    margin: 6px 0;
+  }
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #2ecc71, #27ae60);
+    width: 0%;
+  }
+
+  .hint {
+    color: #7a8aa3;
+    font-size: 0.8rem;
+    margin: 4px 0 0;
+  }
+
+  /* Acciones inferiores */
+  .card-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 16px 12px;
+
+    ion-button {
+      --border-radius: 12px;
+      text-transform: none;
+      font-weight: 700;
+    }
+  }
+}
+
+/* =================== Tabs =================== */
+ion-tab-bar {
+  --background: #ffffff;
+  border-top: none;
+  padding: 4px 0;
+  box-shadow: 0 -4px 18px rgba(20, 37, 63, 0.06);
+}
+
+ion-tab-button {
+  --color: #8896a9;
+  --color-selected: #3498db;
+  font-size: 0.85em;
+
+  .tab-icon {
+    width: 22px;
+    height: 22px;
+    margin-bottom: 2px;
+  }
+}
+
+>>>>>>> Stashed changes

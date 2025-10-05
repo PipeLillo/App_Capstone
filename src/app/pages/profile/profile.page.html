@@ -1,0 +1,198 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home"></ion-back-button>
+    </ion-buttons>
+
+    <ion-title>Perfil</ion-title>
+
+    <ion-buttons slot="end">
+      <ion-button color="medium" (click)="onLogout()">
+        <ion-icon name="log-out-outline" slot="start"></ion-icon>
+        Cerrar sesión
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+
+  <form
+    [formGroup]="form"
+    (ngSubmit)="onSubmit()"
+    (keydown.enter)="preventFormSubmit($event)"
+    novalidate
+  >
+    <ion-list inset="true">
+
+      <!-- ===================== DATOS BÁSICOS ===================== -->
+
+      <!-- Peso -->
+      <ion-item>
+        <ion-label position="stacked">Peso (kg)</ion-label>
+        <!-- type text + inputmode decimal; se normaliza en (ionBlur) -->
+        <ion-input
+          type="text"
+          inputmode="decimal"
+          enterkeyhint="done"
+          placeholder="Ej: 66.5"
+          formControlName="peso"
+          (ionBlur)="formatNumber('peso', 2)">
+        </ion-input>
+      </ion-item>
+
+      <!-- Altura -->
+      <ion-item>
+        <ion-label position="stacked">Altura (cm)</ion-label>
+        <ion-input
+          type="text"
+          inputmode="decimal"
+          enterkeyhint="done"
+          placeholder="Ej: 170"
+          formControlName="altura"
+          (ionBlur)="formatNumber('altura', 2)">
+        </ion-input>
+      </ion-item>
+
+      <!-- Edad -->
+      <ion-item>
+        <ion-label position="stacked">Edad</ion-label>
+        <ion-input
+          type="number"
+          inputmode="numeric"
+          min="0"
+          max="130"
+          placeholder="Ej: 23"
+          formControlName="edad">
+        </ion-input>
+      </ion-item>
+
+      <!-- Contacto de emergencia -->
+      <ion-item>
+        <ion-label position="stacked">Contacto de emergencia</ion-label>
+        <ion-input
+          type="text"
+          placeholder="Nombre y teléfono"
+          formControlName="contactoEmergencia">
+        </ion-input>
+      </ion-item>
+
+      <!-- Dirección -->
+      <ion-item>
+        <ion-label position="stacked">Dirección</ion-label>
+        <ion-textarea
+          autoGrow="true"
+          placeholder="Calle, número, ciudad"
+          formControlName="direccion">
+        </ion-textarea>
+      </ion-item>
+
+      <!-- Contraindicaciones -->
+      <ion-item>
+        <ion-label position="stacked">Contraindicaciones</ion-label>
+        <ion-textarea
+          autoGrow="true"
+          placeholder="Describe contraindicaciones médicas"
+          formControlName="contraindicaciones">
+        </ion-textarea>
+      </ion-item>
+
+      <!-- Medicación permanente -->
+      <ion-item>
+        <ion-label position="stacked">Medicación permanente</ion-label>
+        <ion-textarea
+          autoGrow="true"
+          placeholder="Medicamentos de uso permanente"
+          formControlName="medicacionPermanente">
+        </ion-textarea>
+      </ion-item>
+
+      <!-- ===================== ENFERMEDADES CRÓNICAS ===================== -->
+      <ion-item lines="full">
+        <ion-label position="stacked">Enfermedades crónicas</ion-label>
+        <div class="w-full flex items-center gap-2">
+          <ion-input
+            [formControl]="enfermedadCtrl"
+            type="text"
+            placeholder="Ej: diabetes"
+            (keydown.enter)="onEnfermedadKeydown($event)">
+          </ion-input>
+          <ion-button fill="outline" (click)="addEnfermedad()">
+            <ion-icon name="add-outline" slot="start"></ion-icon>
+            Añadir
+          </ion-button>
+        </div>
+      </ion-item>
+
+      <div class="chips-wrapper ion-padding-start ion-padding-end ion-padding-top">
+        <ion-chip *ngFor="let ctrl of enfermedadesFA.controls; let i = index" color="primary">
+          <ion-label>{{ ctrl.value }}</ion-label>
+          <ion-icon name="close-circle" (click)="removeEnfermedad(i)"></ion-icon>
+        </ion-chip>
+      </div>
+
+      <!-- ===================== ALERGIAS ===================== -->
+      <ion-item lines="full">
+        <ion-label position="stacked">Alergias</ion-label>
+        <div class="w-full flex items-center gap-2">
+          <ion-input
+            [formControl]="alergiaCtrl"
+            type="text"
+            placeholder="Ej: penicilina"
+            (keydown.enter)="onAlergiaKeydown($event)">
+          </ion-input>
+          <ion-button fill="outline" (click)="addAlergia()">
+            <ion-icon name="add-outline" slot="start"></ion-icon>
+            Añadir
+          </ion-button>
+        </div>
+      </ion-item>
+
+      <div class="chips-wrapper ion-padding-start ion-padding-end ion-padding-top">
+        <ion-chip *ngFor="let ctrl of alergiasFA.controls; let i = index" color="tertiary">
+          <ion-label>{{ ctrl.value }}</ion-label>
+          <ion-icon name="close-circle" (click)="removeAlergia(i)"></ion-icon>
+        </ion-chip>
+      </div>
+
+      <!-- ===================== DISCAPACIDADES ===================== -->
+      <ion-item lines="full">
+        <ion-label position="stacked">Discapacidades</ion-label>
+        <div class="w-full flex items-center gap-2">
+          <ion-input
+            [formControl]="discapacidadCtrl"
+            type="text"
+            placeholder="Ej: motora leve"
+            (keydown.enter)="onDiscapacidadKeydown($event)">
+          </ion-input>
+          <ion-button fill="outline" (click)="addDiscapacidad()">
+            <ion-icon name="add-outline" slot="start"></ion-icon>
+            Añadir
+          </ion-button>
+        </div>
+      </ion-item>
+
+      <div class="chips-wrapper ion-padding-start ion-padding-end ion-padding-top">
+        <ion-chip *ngFor="let ctrl of discapacidadesFA.controls; let i = index" color="success">
+          <ion-label>{{ ctrl.value }}</ion-label>
+          <ion-icon name="close-circle" (click)="removeDiscapacidad(i)"></ion-icon>
+        </ion-chip>
+      </div>
+
+    </ion-list>
+
+    <!-- ===================== ACCIONES ===================== -->
+    <ion-button
+      type="submit"
+      expand="block"
+      [disabled]="loading"
+      class="ion-margin-top"
+    >
+      <ion-spinner *ngIf="loading" slot="start"></ion-spinner>
+      <ion-icon *ngIf="!loading" name="save-outline" slot="start"></ion-icon>
+      {{ loading ? 'Guardando…' : 'Guardar cambios' }}
+    </ion-button>
+
+  </form>
+
+</ion-content>
