@@ -1,0 +1,26 @@
+/* Centrado del calendario en pantalla */
+.content-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
+}
+
+/* Tarjeta contenedora del calendario */
+.calendar-card {
+  width: min(640px, 92vw);
+  padding: 12px;
+  border-radius: 16px;
+  background: var(--ion-background-color, #fff);
+  box-shadow: 0 10px 30px rgba(0,0,0,.08);
+}
+
+/* El calendario usa todo el ancho disponible */
+.calendar-card ion-datetime {
+  width: 100%;
+}
+
+/* ✋ No deshabilites el botón interno de mes/año */
+@media (min-width: 768px) {
+  .calendar-card { width: min(720px, 90vw); }
+}

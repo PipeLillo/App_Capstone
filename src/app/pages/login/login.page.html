@@ -1,23 +1,35 @@
-<ion-header>
-  
-</ion-header>
+<ion-header></ion-header>
 
 <ion-content class="ion-padding">
-  <ion-card>
-    <ion-card-header>
-      <ion-card-title style="text-align: center;">Bienvenido  MyZenit</ion-card-title>
-    </ion-card-header>
-    <br><br><br>
+  <!-- Contenedor centrado -->
+  <div class="center-wrap">
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>Bienvenido MyZenit</ion-card-title>
+      </ion-card-header>
 
-    <ion-card-content>
+      <ion-card-content>
+        <ion-button
+          type="button"
+          expand="block"
+          class="google-signin-btn"
+          (click)="signInWithGoogle()"
+          [disabled]="loading">
+          <ion-spinner *ngIf="loading" slot="start"></ion-spinner>
+          <img
+            *ngIf="!loading"
+            src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+            alt="Google logo"
+            class="google-logo"
+            slot="start"
+          />
+          {{ loading ? 'Abriendo Google…' : 'Iniciar Sesión con Google' }}
+        </ion-button>
 
-      <ion-button expand="block" class="google-signin-btn" (click)="signInWithGoogle()">
-        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo" class="google-logo">
-        Iniciar Sesión con Google
-      </ion-button>
-
-    </ion-card-content>
-  </ion-card>
-  
-  
+        <ion-text color="danger" *ngIf="errorMessage">
+          <p class="error-text">{{ errorMessage }}</p>
+        </ion-text>
+      </ion-card-content>
+    </ion-card>
+  </div>
 </ion-content>
