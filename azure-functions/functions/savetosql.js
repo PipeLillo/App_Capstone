@@ -1,297 +1,238 @@
+// functions/index.js
 const { app } = require('@azure/functions');
 const mssql = require('mssql');
 
 /**
- * Config común de base de datos.
- * DB_USER, DB_PASSWORD, DB_SERVER, DB_DATABASE en Application Settings.
- */
+ * Config común de base de datos.
+ * DB_USER, DB_PASSWORD, DB_SERVER, DB_DATABASE en Application Settings.
+ */
 const baseDbConfig = {
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  server: process.env.DB_SERVER,
-  database: process.env.DB_DATABASE,
-  options: {
-    encrypt: true,
-    enableArithAbort: true
-  }
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  server: process.env.DB_SERVER,
+  database: process.env.DB_DATABASE,
+  options: {
+    encrypt: true,
+    enableArithAbort: true
+  }
 };
 
 // -------------------------------------------------------------
-// --- FUNCIÓN 1: savetosql (Registro Inicial) ---
+// --- FUNCIÓN 1: savetosql (Registro/Actualización Inicial) ---
 // -------------------------------------------------------------
 app.http('savetosql', {
-  methods: ['POST'],
-  authLevel: 'function',
-  handler: async (request, context) => {
-    context.log('Función HTTP (savetosql) procesando una solicitud.');
-    let connection;
-    try {
-      const { firebaseUid, userEmail, displayName, photoURL } = await request.json();
+  methods: ['POST'],
+  authLevel: 'function',
+  handler: async (request, context) => {
+    context.log('Función HTTP (savetosql) procesando una solicitud.');
 
-      if (!firebaseUid) {
-        return { status: 400, body: "Por favor, pase un UID de Firebase válido." };
-      }
+    try {
+      const { firebaseUid, userEmail, displayName, photoURL } = await request.json();
 
-      connection = await mssql.connect(baseDbConfig);
-      context.log('Conexión a la base de datos exitosa.');
+      if (!firebaseUid) {
+        return { status: 400, body: "Por favor, pase un UID de Firebase válido." };
+      }
 
-      const dbRequest = new mssql.Request(connection);
+      await mssql.connect(baseDbConfig);
+      context.log('Conexión a la base de datos exitosa.');
 
-      const query = `
-        INSERT INTO Users (FirebaseUid, Email, DisplayName, PhotoURL)
-        VALUES (@firebaseUid, @userEmail, @displayName, @photoURL)
-      `;
-
+      const dbRequest = new mssql.Request();
       dbRequest.input('firebaseUid', mssql.NVarChar(128), firebaseUid);
-      dbRequest.input('userEmail', mssql.NVarChar(255), userEmail || null);
-      dbRequest.input('displayName', mssql.NVarChar(255), displayName || null);
-      dbRequest.input('photoURL', mssql.NVarChar(512), photoURL || null);
 
-      await dbRequest.query(query);
-      context.log(`Usuario con UID ${firebaseUid} guardado exitosamente.`);
+      // ✅ MEJORA: Se usa MERGE para insertar o actualizar si el usuario ya existe.
+      // Esto evita errores de clave primaria duplicada si el usuario se loguea de nuevo.
+      const query = `
+        MERGE dbo.Users AS target
+        USING (SELECT @firebaseUid AS FirebaseUid) AS source
+        ON (target.FirebaseUid = source.FirebaseUid)
+        WHEN MATCHED THEN
+            UPDATE SET 
+                DisplayName = @displayName,
+                PhotoURL = @photoURL,
+                Email = @userEmail
+        WHEN NOT MATCHED THEN
+            INSERT (FirebaseUid, Email, DisplayName, PhotoURL)
+            VALUES (@firebaseUid, @userEmail, @displayName, @photoURL);
+      `;
 
-      return {
-        status: 200,
-        body: `Usuario con UID ${firebaseUid} guardado exitosamente.`
-      };
-    } catch (err) {
-      // ✅ MEJORA: Maneja el error de usuario duplicado sin crashear.
-      // El código de error 2627 (o 2601) corresponde a una violación de UNIQUE constraint.
-      if (err.number === 2627 || err.number === 2601) {
-        const { firebaseUid } = await request.json();
-        context.log(`Intento de insertar un usuario duplicado con UID: ${firebaseUid}. Se omite la inserción.`);
-        return { status: 200, body: `El usuario con UID ${firebaseUid} ya existe.` };
-      }
+      dbRequest.input('userEmail', mssql.NVarChar(255), userEmail || null);
+      dbRequest.input('displayName', mssql.NVarChar(255), displayName || null);
+      dbRequest.input('photoURL', mssql.NVarChar(512), photoURL || null);
 
-      context.log.error('Error al conectar o insertar en la base de datos (savetosql):', err);
-      return {
-        status: 500,
-        body: "Ocurrió un error al procesar la solicitud de registro. Por favor, intente de nuevo más tarde."
-      };
-    } finally {
-      if (connection) {
-        connection.close();
-        context.log('Conexión a la base de datos cerrada (savetosql).');
-      }
-    }
-  }
+      await dbRequest.query(query);
+      context.log(`Usuario con UID ${firebaseUid} guardado/actualizado exitosamente.`);
+
+      return {
+        status: 200,
+        body: `Usuario con UID ${firebaseUid} guardado/actualizado exitosamente.`
+      };
+    } catch (err) {
+      context.log.error('Error al conectar o insertar en la base de datos (savetosql):', err);
+      return { status: 500, body: "Ocurrió un error al procesar la solicitud de registro." };
+    } finally {
+      mssql.close();
+      context.log('Conexión a la base de datos cerrada (savetosql).');
+    }
+  }
 });
+
+// ... (las funciones 'updateuserinfo' y 'getuserinfo' permanecen iguales) ...
 
 // -------------------------------------------------------------
 // --- FUNCIÓN 2: updateuserinfo (Actualización de Información) ---
 // -------------------------------------------------------------
 app.http('updateuserinfo', {
-  methods: ['POST'],
-  authLevel: 'function',
-  handler: async (request, context) => {
-    context.log('Función HTTP (updateuserinfo) procesando una solicitud.');
-    let connection;
-    try {
-      const {
-        firebaseUid,
-        peso,
-        altura,
-        edad,
-        contactoEmergencia,
-        direccion,
-        contraindicaciones,
-        alergias,
-        enfermedadesCronicas,
-        medicacionPermanente,
-        discapacidades
-      } = await request.json();
+  methods: ['POST'],
+  authLevel: 'function',
+  handler: async (request, context) => {
+    context.log('Función HTTP (updateuserinfo) procesando una solicitud.');
 
-      if (!firebaseUid) {
-        return {
-          status: 400,
-          body: "El 'firebaseUid' es obligatorio para actualizar la información del usuario."
-        };
-      }
+    try {
+      const {
+        firebaseUid, peso, altura, edad, contactoEmergencia,
+        direccion, contraindicaciones, alergias, enfermedadesCronicas,
+        medicacionPermanente, discapacidades
+      } = await request.json();
 
-      connection = await mssql.connect(baseDbConfig);
-      context.log('Conexión a la base de datos exitosa para la actualización.');
+      if (!firebaseUid) {
+        return { status: 400, body: "El 'firebaseUid' es obligatorio." };
+      }
 
-      const dbRequest = new mssql.Request(connection);
+      await mssql.connect(baseDbConfig);
+      const dbRequest = new mssql.Request();
 
-      const query = `
-        UPDATE Users
-        SET
-          Peso                 = @peso,
-          Altura               = @altura,
-          Edad                 = @edad,
-          ContactoEmergencia   = @contactoEmergencia,
-          Direccion            = @direccion,
-          Contraindicaciones   = @contraindicaciones,
-          Alergias             = @alergias,
-          EnfermedadesCronicas = @enfermedadesCronicas,
-          MedicacionPermanente = @medicacionPermanente,
-          Discapacidades       = @discapacidades
-        WHERE FirebaseUid = @firebaseUid
-      `;
+      const query = `
+        UPDATE Users
+        SET
+          Peso = @peso, Altura = @altura, Edad = @edad, ContactoEmergencia = @contactoEmergencia,
+          Direccion = @direccion, Contraindicaciones = @contraindicaciones, Alergias = @alergias,
+          EnfermedadesCronicas = @enfermedadesCronicas, MedicacionPermanente = @medicacionPermanente,
+          Discapacidades = @discapacidades
+        WHERE FirebaseUid = @firebaseUid
+      `;
 
-      dbRequest.input('firebaseUid', mssql.NVarChar(128), firebaseUid);
-      dbRequest.input('peso', mssql.Decimal(5, 2), peso === undefined ? null : peso);
-      dbRequest.input('altura', mssql.Decimal(5, 2), altura === undefined ? null : altura);
-      dbRequest.input('edad', mssql.Int, edad === undefined ? null : edad);
-      dbRequest.input('contactoEmergencia', mssql.NVarChar(255), contactoEmergencia || null);
-      dbRequest.input('direccion', mssql.NVarChar(512), direccion || null);
-      dbRequest.input('contraindicaciones', mssql.NVarChar(mssql.MAX), contraindicaciones || null);
-      dbRequest.input('alergias', mssql.NVarChar(mssql.MAX), alergias || null);
-      dbRequest.input('enfermedadesCronicas', mssql.NVarChar(mssql.MAX), enfermedadesCronicas || null);
-      dbRequest.input('medicacionPermanente', mssql.NVarChar(mssql.MAX), medicacionPermanente || null);
-      dbRequest.input('discapacidades', mssql.NVarChar(mssql.MAX), discapacidades || null);
+      dbRequest.input('firebaseUid', mssql.NVarChar(128), firebaseUid);
+      dbRequest.input('peso', mssql.Decimal(5, 2), peso === undefined ? null : peso);
+      dbRequest.input('altura', mssql.Decimal(5, 2), altura === undefined ? null : altura);
+      dbRequest.input('edad', mssql.Int, edad === undefined ? null : edad);
+      dbRequest.input('contactoEmergencia', mssql.NVarChar(255), contactoEmergencia || null);
+      dbRequest.input('direccion', mssql.NVarChar(512), direccion || null);
+      dbRequest.input('contraindicaciones', mssql.NVarChar(mssql.MAX), contraindicaciones || null);
+      dbRequest.input('alergias', mssql.NVarChar(mssql.MAX), alergias || null);
+      dbRequest.input('enfermedadesCronicas', mssql.NVarChar(mssql.MAX), enfermedadesCronicas || null);
+      dbRequest.input('medicacionPermanente', mssql.NVarChar(mssql.MAX), medicacionPermanente || null);
+      dbRequest.input('discapacidades', mssql.NVarChar(mssql.MAX), discapacidades || null);
 
-      const result = await dbRequest.query(query);
+      const result = await dbRequest.query(query);
 
-      if (result.rowsAffected[0] === 0) {
-        return {
-          status: 404,
-          body: `No se encontró un usuario con UID ${firebaseUid} para actualizar.`
-        };
-      }
+      if (result.rowsAffected[0] === 0) {
+        return { status: 404, body: `No se encontró usuario con UID ${firebaseUid}.` };
+      }
 
-      context.log(`Información extra del usuario con UID ${firebaseUid} actualizada exitosamente.`);
-      return {
-        status: 200,
-        body: `Información extra del usuario con UID ${firebaseUid} actualizada exitosamente.`
-      };
-    } catch (err) {
-      context.log.error('Error al conectar o actualizar en la base de datos (updateuserinfo):', err);
-      return {
-        status: 500,
-        body: "Ocurrió un error al procesar la solicitud de actualización. Por favor, intente de nuevo más tarde."
-      };
-    } finally {
-      if (connection) {
-        connection.close();
-        context.log('Conexión a la base de datos cerrada (updateuserinfo).');
-      }
-    }
-  }
+      return { status: 200, body: `Información del usuario ${firebaseUid} actualizada.` };
+    } catch (err) {
+      context.log.error('Error en updateuserinfo:', err);
+      return { status: 500, body: "Error al procesar la solicitud de actualización." };
+    } finally {
+      mssql.close();
+    }
+  }
 });
 
 // -------------------------------------------------------------
 // --- FUNCIÓN 3: getuserinfo (Lectura / Prefill del formulario) ---
 // -------------------------------------------------------------
 app.http('getuserinfo', {
-  methods: ['GET'],
-  authLevel: 'function',
-  handler: async (request, context) => {
-    context.log('Función HTTP (getuserinfo) procesando una solicitud.');
-    let connection;
-    try {
-      const firebaseUid = request.query.get('firebaseUid');
+  methods: ['GET'],
+  authLevel: 'function',
+  handler: async (request, context) => {
+    context.log('Función HTTP (getuserinfo) procesando una solicitud.');
+    const firebaseUid = request.query.get('firebaseUid');
 
-      if (!firebaseUid) {
-        return {
-          status: 400,
-          jsonBody: { error: "El parámetro 'firebaseUid' es obligatorio." }
-        };
-      }
+    if (!firebaseUid) {
+      return { status: 400, jsonBody: { error: "El parámetro 'firebaseUid' es obligatorio." } };
+    }
 
-      connection = await mssql.connect(baseDbConfig);
-      context.log('Conexión a la base de datos exitosa (getuserinfo).');
+    try {
+      await mssql.connect(baseDbConfig);
+      const dbRequest = new mssql.Request();
+      dbRequest.input('firebaseUid', mssql.NVarChar(128), firebaseUid);
+      const query = `SELECT * FROM Users WHERE FirebaseUid = @firebaseUid`;
+      const result = await dbRequest.query(query);
 
-      const dbRequest = new mssql.Request(connection);
-      dbRequest.input('firebaseUid', mssql.NVarChar(128), firebaseUid);
-
-      const query = `
-        SELECT
-          FirebaseUid, Email, DisplayName, PhotoURL, Peso, Altura, Edad,
-          ContactoEmergencia, Direccion, Contraindicaciones, Alergias,
-          EnfermedadesCronicas, MedicacionPermanente, Discapacidades
-        FROM Users
-        WHERE FirebaseUid = @firebaseUid
-      `;
-
-      const result = await dbRequest.query(query);
-
-      if (!result.recordset || result.recordset.length === 0) {
-        return { status: 404, jsonBody: { error: `No se encontró usuario con UID ${firebaseUid}` } };
-      }
-
-      return {
-        status: 200,
-        jsonBody: result.recordset[0]
-      };
-    } catch (err) {
-      context.log.error('Error en getuserinfo:', err);
-      return {
-        status: 500,
-        jsonBody: {
-          error: 'Error al obtener la información del usuario.',
-          detail: err?.message || String(err)
-        }
-      };
-    } finally {
-      if (connection) {
-        connection.close();
-        context.log('Conexión a la base de datos cerrada (getuserinfo).');
-      }
-    }
-  }
+      if (!result.recordset || result.recordset.length === 0) {
+        return { status: 404, jsonBody: { error: `No se encontró usuario con UID ${firebaseUid}` } };
+      }
+      return { status: 200, jsonBody: result.recordset[0] };
+    } catch (err) {
+      context.log.error('Error en getuserinfo:', err);
+      return { status: 500, jsonBody: { error: 'Error al obtener la información del usuario.' } };
+    } finally {
+      mssql.close();
+    }
+  }
 });
 
 // -------------------------------------------------------------
-// --- ✅ NUEVA FUNCIÓN 4: getdoses (Obtener registros de dosis para el calendario) ---
+// --- ✅ FUNCIÓN 4: getdoses (Obtener eventos para el calendario) ---
 // -------------------------------------------------------------
 app.http('getdoses', {
-    methods: ['GET'],
-    authLevel: 'function',
-    handler: async (request, context) => {
-        context.log('Función HTTP (getdoses) procesando una solicitud.');
-        let connection;
-        try {
-            const firebaseUid = request.query.get('firebaseUid');
+  methods: ['GET'],
+  authLevel: 'function', // O 'anonymous' si no requiere clave de API
+  handler: async (request, context) => {
+    context.log('Función HTTP (getdoses) procesando una solicitud.');
+    const firebaseUid = request.query.get('firebaseUid');
 
-            if (!firebaseUid) {
-                return {
-                    status: 400,
-                    jsonBody: { error: "El parámetro 'firebaseUid' es obligatorio." }
-                };
-            }
+    if (!firebaseUid) {
+      return { status: 400, jsonBody: { error: "El parámetro 'firebaseUid' es obligatorio." } };
+    }
 
-            connection = await mssql.connect(baseDbConfig);
-            context.log('Conexión a la base de datos exitosa (getdoses).');
+    try {
+      await mssql.connect(baseDbConfig);
+      context.log('Conexión a la base de datos exitosa (getdoses).');
 
-            const dbRequest = new mssql.Request(connection);
-            dbRequest.input('firebaseUid', mssql.NVarChar(128), firebaseUid);
+      const dbRequest = new mssql.Request();
+      dbRequest.input('firebaseUid', mssql.NVarChar(128), firebaseUid);
 
-            const query = `
-                SELECT
-                    dr.RecordID         AS recordID,
-                    m.Name              AS medicationName,
-                    dr.ScheduledTime    AS scheduledTime,
-                    dr.Status           AS status
-                FROM DoseRecords AS dr
-                INNER JOIN UserPlans AS up ON dr.PlanID = up.PlanID
-                INNER JOIN Medications AS m ON up.MedicationID = m.MedicationID
-                WHERE up.OwnerFirebaseUID = @firebaseUid
-                ORDER BY dr.ScheduledTime ASC;
-            `;
+      // ✅ CONSULTA ACTUALIZADA: Se une con Medications para obtener el nombre y el color.
+      const query = `
+        SELECT
+            dr.RecordID AS recordID,
+            m.Name AS medicationName,
+            m.Color AS medicationColor, -- Se selecciona la nueva columna de color
+            dr.ScheduledTime AS scheduledTime,
+            dr.Status AS status
+        FROM 
+            dbo.DoseRecords dr
+        JOIN 
+            dbo.UserPlans up ON dr.PlanID = up.PlanID
+        JOIN
+            dbo.Medications m ON up.MedicationID = m.MedicationID
+        WHERE 
+            up.OwnerFirebaseUID = @firebaseUid
+        ORDER BY
+            dr.ScheduledTime ASC;
+      `;
 
-            const result = await dbRequest.query(query);
+      const result = await dbRequest.query(query);
 
-            // Devuelve un array con los resultados (o un array vacío si no hay ninguno).
-            return {
-                status: 200,
-                jsonBody: result.recordset || []
-            };
+      context.log(`Se encontraron ${result.recordset.length} registros de dosis para el usuario ${firebaseUid}.`);
 
-        } catch (err) {
-            context.log.error('Error en getdoses:', err);
-            return {
-                status: 500,
-                jsonBody: {
-                    error: 'Error al obtener los registros de dosis.',
-                    detail: err?.message || String(err)
-                }
-            };
-        } finally {
-            if (connection) {
-                connection.close();
-                context.log('Conexión a la base de datos cerrada (getdoses).');
-            }
-        }
-    }
+      // Devuelve el array de registros como JSON.
+      return {
+        status: 200,
+        jsonBody: result.recordset
+      };
+    } catch (err) {
+      context.log.error('Error en getdoses:', err);
+      return {
+        status: 500,
+        jsonBody: { error: 'Error al obtener los registros de dosis.' }
+      };
+    } finally {
+      mssql.close();
+      context.log('Conexión a la base de datos cerrada (getdoses).');
+    }
+  }
 });
+
