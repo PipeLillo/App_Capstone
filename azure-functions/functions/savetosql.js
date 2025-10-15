@@ -1,10 +1,10 @@
-// functions/index.js (o el archivo donde declaras tus Azure Functions)
+// functions/index.js
 const { app } = require('@azure/functions');
 const mssql = require('mssql');
 
 /**
  * Config común de base de datos.
- * Asegúrate de tener DB_USER, DB_PASSWORD, DB_SERVER, DB_DATABASE en Application Settings.
+ * DB_USER, DB_PASSWORD, DB_SERVER, DB_DATABASE en Application Settings.
  */
 const baseDbConfig = {
   user: process.env.DB_USER,
@@ -73,7 +73,7 @@ app.http('savetosql', {
 // --- FUNCIÓN 2: updateuserinfo (Actualización de Información) ---
 // -------------------------------------------------------------
 app.http('updateuserinfo', {
-  methods: ['POST'], // POST/PUT/PATCH; aquí usamos POST
+  methods: ['POST'], //Método POST
   authLevel: 'function',
   handler: async (request, context) => {
     context.log('Función HTTP (updateuserinfo) procesando una solicitud.');
@@ -149,7 +149,7 @@ app.http('updateuserinfo', {
       }
 
       context.log(`Información extra del usuario con UID ${firebaseUid} actualizada exitosamente.`);
-      // Texto plano (tu cliente Angular ya pide responseType: 'text')
+      // Texto plano
       return {
         status: 200,
         body: `Información extra del usuario con UID ${firebaseUid} actualizada exitosamente.`
@@ -238,3 +238,4 @@ app.http('getuserinfo', {
     }
   }
 });
+
