@@ -5,16 +5,16 @@ name: Deploy Node.js Azure Function
 on:
   push:
     branches:
-      - main  # Se activa con cada push a la rama main
-  workflow_dispatch: # Permite ejecutarlo manualmente desde GitHub
+      - main
+  workflow_dispatch:
 
-# Variables de entorno para todo el flujo de trabajo
+# Variables de entorno
 env:
-  AZURE_FUNCTIONAPP_NAME: 'savetosql'      # El nombre de tu Function App
-  NODE_VERSION: '20.x'                     # La versión de Node.js a usar
-  PACKAGE_DIRECTORY: './azure-functions'   # <-- ¡La clave! La carpeta donde está tu código
+  AZURE_FUNCTIONAPP_NAME: 'savetosql'
+  NODE_VERSION: '20.x'
+  PACKAGE_DIRECTORY: './azure-functions'
 
-# Permisos necesarios para la autenticación segura con Azure
+# Permisos necesarios
 permissions:
   id-token: write
   contents: read
@@ -25,31 +25,29 @@ jobs:
     environment: production
 
     steps:
-    # 1. Obtiene el código de tu repositorio
     - name: 'Checkout GitHub Action'
       uses: actions/checkout@v4
 
-    # 2. Inicia sesión en Azure de forma segura
-    # (El secreto AZURE_CREDENTIALS se crea automáticamente al conectar desde Azure)
     - name: 'Login to Azure'
       uses: azure/login@v1
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-    # 3. Configura la versión correcta de Node.js
     - name: Setup Node.js version
       uses: actions/setup-node@v4
       with:
         node-version: ${{ env.NODE_VERSION }}
 
-    # 4. Instala las dependencias (npm install) DENTRO de la carpeta correcta
+    # --- 👇 ESTE ES EL NUEVO PASO QUE SOLUCIONA EL ERROR 👇 ---
+    - name: Install build tools (for native dependencies)
+      run: sudo apt-get update && sudo apt-get install -y build-essential
+
     - name: 'npm install and build'
       run: |
         npm install
         npm run build --if-present
       working-directory: ${{ env.PACKAGE_DIRECTORY }}
 
-    # 5. Despliega el código en Azure Functions
     - name: 'Deploy to Azure Functions'
       id: deploy-to-function
       uses: azure/functions-action@v1
