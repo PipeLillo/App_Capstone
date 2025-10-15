@@ -20,7 +20,7 @@ export const routes: Routes = [
   },
   {
     path: 'calendar',
-    loadComponent: () => import('./pages/calendar/calendar.page').then( m => m.CalendarPage)
+    loadComponent: () => import('./pages/calendar/calendar.page').then(m => m.CalendarPage)
   },
   {
     path: 'chatbot',
@@ -34,6 +34,11 @@ export const routes: Routes = [
     path: 'datetime',
     loadComponent: () => import('./ionic/datetime/datetime.component').then((c) => c.DatetimeComponent)
   },
+  {
+    path: 'calendar',
+    loadComponent: () => import('./pages/calendar/calendar.page').then( m => m.CalendarPage)
+  },
+
  
 
 

@@ -1,0 +1,108 @@
+:host {
+  /* ===============================================================
+     Variables Centrales para TEMA CLARO (MODIFICA ESTOS VALORES)
+     =============================================================== */
+
+  // --- 🖌️ VARIABLES DE COLOR (Paleta para fondo claro) ---
+  --cal-bg: #ffffff;                 // Fondo principal de las celdas
+  --cal-text: #333333;               // Color principal para los números de día (oscuro)
+  --cal-border: #e0e0e0;             // Un borde suave
+  --cal-header-text: #666666;        // Texto de los días de la semana (L, M, M...)
+  
+  --cal-today-bg: #e3f2fd;           // Un fondo celeste muy claro para "HOY"
+  --cal-today-text: #1e88e5;         // Texto azul para "HOY" para que resalte
+  
+  --cal-selected-bg: #1976d2;        // Fondo azul oscuro para el día seleccionado
+  --cal-selected-text: #ffffff;      // Texto blanco para el día seleccionado
+  
+  --cal-event-dot: #e53935;          // Punto de evento (rojo)
+  --cal-dim-text: #b0b0b0;           // ✨ CORRECCIÓN CLAVE: Un gris visible para los días de otros meses
+
+  // --- ✏️ VARIABLES DE TAMAÑO DE LETRA ---
+  --font-size-header: 0.9em;
+  --font-size-day-number: 1em;
+  --font-size-segment-button: 0.9em;
+
+  /* ===============================================================
+     ESTILOS DE LA VISTA MENSUAL (mwl-calendar-month-view)
+     =============================================================== */
+
+  mwl-calendar-month-view {
+    color: var(--cal-text);
+
+    .cal-header {
+      background-color: var(--cal-bg);
+      border-bottom: 2px solid var(--cal-border);
+      color: var(--cal-header-text);
+      font-size: var(--font-size-header);
+      font-weight: 700;
+    }
+
+    .cal-cell-row {
+      border-bottom: 1px solid var(--cal-border);
+    }
+
+    .cal-day-cell {
+      background-color: var(--cal-bg);
+      min-height: 100px; // Aumentar altura para mejor visualización
+      
+      &:hover {
+        background-color: #f5f5f5;
+      }
+    }
+
+    // --- REGLA PARA LOS NÚMEROS ---
+    .cal-day-cell .cal-day-number {
+      color: var(--cal-text);
+      font-size: var(--font-size-day-number);
+      margin-top: 5px; // Pequeño ajuste para centrar
+    }
+
+    // --- Estilos para estados especiales ---
+
+    // Día de HOY
+    .cal-today {
+      background-color: var(--cal-today-bg);
+      .cal-day-number {
+        color: var(--cal-today-text);
+        font-weight: bold;
+      }
+    }
+    
+    // Día SELECCIONADO
+    .cal-day-cell.cal-day-cell-selected,
+    .cal-day-cell.cal-open {
+      background-color: var(--cal-selected-bg);
+      .cal-day-number {
+        color: var(--cal-selected-text);
+        font-weight: bold;
+      }
+    }
+
+    // ✨ CORRECCIÓN CLAVE: Días que no están en el mes actual
+    .cal-cell:not(.cal-in-month) .cal-day-number {
+      color: var(--cal-dim-text);
+    }
+    
+    // Punto de evento
+    .cal-event-dot .cal-event {
+        background-color: var(--cal-event-dot) !important;
+    }
+  }
+
+  /* ===============================================================
+     Estilos para otros elementos
+     =============================================================== */
+
+  ion-toolbar {
+    --background: var(--cal-bg);
+    --color: var(--cal-header-text);
+    --border-color: var(--cal-border); // Aplicar borde consistente
+  }
+
+  ion-segment-button {
+    --color: var(--cal-header-text);
+    --color-checked: var(--ion-color-primary); // Usar el color primario de Ionic
+    font-size: var(--font-size-segment-button);
+  }
+}

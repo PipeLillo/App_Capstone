@@ -53,3 +53,29 @@ import 'zone.js';  // Included with Angular CLI.
 /***************************************************************************************************
  * APPLICATION IMPORTS
  */
+
+/**
+ * This file includes polyfills needed by Angular and is loaded before the
+ * application. You can add your own extra polyfills to this file.
+ *
+ * This file is divided into 2 sections:
+ * 1. Browser polyfills.
+ * 2. Application imports.
+ *
+ * See https://angular.io/guide/browser-support for more info.
+ */
+
+/***************************************************************************************************
+ * BROWSER POLYFILLS
+ */
+
+// Se requiere para la internacionalización (i18n) en angular-calendar
+import '@angular/localize/init'; // <--- LÍNEA CRÍTICA AÑADIDA
+
+
+import 'zone.js'; // Included with Angular CLI.
+
+
+/***************************************************************************************************
+ * APPLICATION IMPORTS
+ */

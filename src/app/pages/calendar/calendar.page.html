@@ -1,13 +1,53 @@
-<ion-header [translucent]="true">
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-title>Calendario</ion-title>
+  </ion-toolbar>
+
   <ion-toolbar>
-    <ion-title>calendar</ion-title>
+    <ion-buttons slot="start">
+      <ion-button (click)="changeDate(-1)">
+        <ion-icon name="chevron-back-outline" slot="icon-only"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+
+    <ion-title>{{ viewDate | date:'dd MMMM yyyy':'es' }}</ion-title>
+
+    <ion-buttons slot="end">
+      <ion-button (click)="changeDate(1)">
+        <ion-icon name="chevron-forward-outline" slot="icon-only"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+
+  <ion-toolbar>
+    <ion-segment [value]="view" (ionChange)="setView($event.detail.value)">
+      <ion-segment-button [value]="CalendarView.Day">
+        <ion-label>Día</ion-label>
+      </ion-segment-button>
+      <ion-segment-button [value]="CalendarView.Week">
+        <ion-label>Semana</ion-label>
+      </ion-segment-button>
+      <ion-segment-button [value]="CalendarView.Month">
+        <ion-label>Mes</ion-label>
+      </ion-segment-button>
+    </ion-segment>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">calendar</ion-title>
-    </ion-toolbar>
-  </ion-header>
+<ion-content>
+  <div class="calendar-container">
+    <div [ngSwitch]="view">
+      <mwl-calendar-month-view
+        *ngSwitchCase="CalendarView.Month"
+        [viewDate]="viewDate"
+        [events]="events"
+        [refresh]="refresh"
+        (dayClicked)="dayClicked($event.day)"
+        [locale]="'es'">
+      </mwl-calendar-month-view>
+
+      <mwl-calendar-week-view *ngSwitchCase="CalendarView.Week" [viewDate]="viewDate" [events]="events" [locale]="'es'"></mwl-calendar-week-view>
+      <mwl-calendar-day-view *ngSwitchCase="CalendarView.Day" [viewDate]="viewDate" [events]="events" [locale]="'es'"></mwl-calendar-day-view>
+    </div>
+  </div>
 </ion-content>
