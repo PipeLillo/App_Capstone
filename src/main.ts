@@ -1,3 +1,5 @@
+/// <reference types="@angular/localize" />
+
 // src/main.ts
 
 import { bootstrapApplication, provideProtractorTestingSupport } from '@angular/platform-browser';
