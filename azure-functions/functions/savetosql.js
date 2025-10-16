@@ -39,8 +39,7 @@ app.http('savetosql', {
       const dbRequest = new mssql.Request();
       dbRequest.input('firebaseUid', mssql.NVarChar(128), firebaseUid);
 
-      // ✅ MEJORA: Se usa MERGE para insertar o actualizar si el usuario ya existe.
-      // Esto evita errores de clave primaria duplicada si el usuario se loguea de nuevo.
+      // Se usa MERGE para insertar o actualizar si el usuario ya existe.
       const query = `
         MERGE dbo.Users AS target
         USING (SELECT @firebaseUid AS FirebaseUid) AS source
@@ -76,7 +75,6 @@ app.http('savetosql', {
   }
 });
 
-// ... (las funciones 'updateuserinfo' y 'getuserinfo' permanecen iguales) ...
 
 // -------------------------------------------------------------
 // --- FUNCIÓN 2: updateuserinfo (Actualización de Información) ---
@@ -174,7 +172,7 @@ app.http('getuserinfo', {
 });
 
 // -------------------------------------------------------------
-// --- ✅ FUNCIÓN 4: getdoses (Obtener eventos para el calendario) ---
+// --- getdoses (Obtener eventos para el calendario) ---
 // -------------------------------------------------------------
 app.http('getdoses', {
   methods: ['GET'],
@@ -235,4 +233,5 @@ app.http('getdoses', {
     }
   }
 });
+
 
