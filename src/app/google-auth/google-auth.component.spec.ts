@@ -9,8 +9,10 @@ describe('GoogleAuthComponent', () => {
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ GoogleAuthComponent ],
-      imports: [IonicModule.forRoot()]
+      // ❗️ CORRECCIÓN: Se elimina GoogleAuthComponent de 'declarations'
+      declarations: [], 
+      // ❗️ Se mantiene en 'imports' por ser Standalone
+      imports: [GoogleAuthComponent, IonicModule.forRoot()] 
     }).compileComponents();
 
     fixture = TestBed.createComponent(GoogleAuthComponent);
