@@ -1,13 +1,109 @@
-<ion-header [translucent]="true">
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-title class="ion-text-center">Mi Tratamiento</ion-title>
+  </ion-toolbar>
+
   <ion-toolbar>
-    <ion-title>calendar</ion-title>
+    <ion-buttons slot="start">
+      <ion-button (click)="changeDate(-1)">
+        <ion-icon name="chevron-back-outline" slot="icon-only"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+
+    <ion-title class="ion-text-center ion-activatable" (click)="setPickerOpen(true)">
+      {{ viewDate | date:'MMMM yyyy':'es' }}
+      <ion-ripple-effect></ion-ripple-effect>
+    </ion-title>
+
+    <ion-buttons slot="end">
+      <ion-button (click)="changeDate(1)">
+        <ion-icon name="chevron-forward-outline" slot="icon-only"></ion-icon>
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">calendar</ion-title>
-    </ion-toolbar>
-  </ion-header>
+<ion-content>
+  <!-- Indicador de Carga mientras se obtienen los datos -->
+  <div *ngIf="isLoading" class="loading-container">
+    <ion-spinner name="crescent"></ion-spinner>
+    <p>Cargando tratamiento...</p>
+  </div>
+
+  <!-- Contenido principal (se oculta mientras carga) -->
+  <div [hidden]="isLoading">
+    <div 
+      class="calendar-container"
+      (swipeleft)="changeDate(1)" 
+      (swiperight)="changeDate(-1)"
+    >
+      <mwl-calendar-month-view
+        [viewDate]="viewDate"
+        [events]="events"
+        [refresh]="refresh"
+        (dayClicked)="dayClicked($event.day)"
+        [locale]="'es'"
+        [cellTemplate]="customCellTemplate" 
+      >
+      </mwl-calendar-month-view>
+    </div>
+
+    <!-- Lista de eventos (tomas) del día seleccionado -->
+    <div *ngIf="selectedDayEvents.length > 0" class="selected-day-events">
+      <ion-list-header class="ion-padding-horizontal">
+        Tomas para el {{ viewDate | date:'d MMMM':'es' }}
+      </ion-list-header>
+      <ion-list lines="none">
+        <ion-item *ngFor="let event of selectedDayEvents" class="event-item">
+          <!-- Icono para indicar el estado (Tomado / Pendiente) -->
+          <ion-icon 
+            slot="start" 
+            [name]="event.meta.isTaken ? 'checkmark-circle' : 'calendar-outline'"
+            [color]="event.meta.isTaken ? 'success' : 'primary'">
+          </ion-icon>
+          <ion-label>
+            <div class="event-title">{{ event.title }}</div>
+            <p class="event-time">{{ event.start | date:'shortTime':'es' }} - {{ event.meta.isTaken ? 'Tomado' : 'Pendiente' }}</p>
+          </ion-label>
+        </ion-item>
+      </ion-list>
+    </div>
+  </div>
 </ion-content>
+
+<!-- Modal con el selector de fecha -->
+<ion-modal [isOpen]="isPickerOpen" (didDismiss)="setPickerOpen(false)">
+  <ng-template>
+    <ion-header>
+      <ion-toolbar>
+        <ion-title>Seleccionar Mes y Año</ion-title>
+        <ion-buttons slot="end">
+          <ion-button (click)="setPickerOpen(false)">Cerrar</ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+    <ion-content class="ion-padding">
+      <ion-datetime
+        presentation="month-year"
+        [value]="viewDate.toISOString()"
+        (ionChange)="handleDateChange($event)"
+        locale="es-ES"
+      ></ion-datetime>
+    </ion-content>
+  </ng-template>
+</ion-modal>
+
+<!-- Template personalizado para las celdas del mes -->
+<ng-template #customCellTemplate let-day="day" let-locale="locale">
+  <div class="cal-cell-top">
+    <span class="cal-day-number">{{ day.date | calendarDate:'monthViewDayNumber':locale }}</span>
+  </div>
+  <div class="cal-events" *ngIf="day.events.length > 0">
+    <div
+      class="cal-event"
+      *ngFor="let event of day.events"
+      [style.backgroundColor]="event.color?.primary"
+    ></div>
+  </div>
+</ng-template>
+

@@ -1,18 +1,83 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
+import { IonicModule } from '@ionic/angular';
+import { RouterTestingModule } from '@angular/router/testing';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { BehaviorSubject } from 'rxjs';
+import { User } from 'firebase/auth';
 
 import { HomePage } from './home.page';
+import { AuthenticationService } from '../services/authentication.service';
+
+// --- SIMULACIÓN (MOCK) DEL SERVICIO DE AUTENTICACIÓN ---
+// Creamos un objeto falso que imita a AuthenticationService para tener control
+// sobre los datos que recibe el componente durante las pruebas.
+const mockAuthService = {
+  user$: new BehaviorSubject<User | null>(null)
+};
 
 describe('HomePage', () => {
   let component: HomePage;
   let fixture: ComponentFixture<HomePage>;
 
-  beforeEach(async () => {
+  beforeEach(waitForAsync(() => {
+    TestBed.configureTestingModule({
+      imports: [
+        IonicModule.forRoot(),
+        RouterTestingModule,
+        // ✅ SOLUCIÓN: Se añade HttpClientTestingModule para resolver la dependencia
+        // que viene de AuthenticationService.
+        HttpClientTestingModule,
+        HomePage, // Se importa el componente standalone directamente
+      ],
+      providers: [
+        // Le decimos a Angular que cuando el HomePage pida el AuthenticationService,
+        // le entregue nuestra simulación en su lugar.
+        { provide: AuthenticationService, useValue: mockAuthService }
+      ]
+    }).compileComponents();
+
     fixture = TestBed.createComponent(HomePage);
     component = fixture.componentInstance;
-    fixture.detectChanges();
-  });
+  }));
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  // --- PRUEBAS PARA LA LÓGICA DEL SALUDO ---
+
+  it('should set greeting with display name on init', () => {
+    // Arrange: Preparamos un usuario de prueba con nombre.
+    const mockUser = { displayName: 'Felipe Pardo', email: 'test@test.com' } as User;
+    mockAuthService.user$.next(mockUser);
+
+    // Act: Disparamos la detección de cambios para que ngOnInit se ejecute.
+    fixture.detectChanges();
+
+    // Assert: Verificamos que el saludo se haya formateado correctamente.
+    expect(component.greeting).toBe('¡Hola, Felipe!');
+  });
+
+  it('should set greeting with email prefix if display name is missing', () => {
+    // Arrange: Preparamos un usuario sin nombre pero con email.
+    const mockUser = { displayName: null, email: 'invitado@example.com' } as User;
+    mockAuthService.user$.next(mockUser);
+
+    // Act
+    fixture.detectChanges();
+
+    // Assert: Verificamos que se use el email como fallback.
+    expect(component.greeting).toBe('¡Hola, Invitado!');
+  });
+  
+  it('should set default greeting if user is null', () => {
+    // Arrange: Simulamos que no hay ningún usuario logueado.
+    mockAuthService.user$.next(null);
+    
+    // Act
+    fixture.detectChanges();
+
+    // Assert: Verificamos que se muestre el saludo por defecto.
+    expect(component.greeting).toBe('¡Hola!');
   });
 });

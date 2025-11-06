@@ -1,0 +1,165 @@
+/* ===============================================================
+   Variables Centrales para el Tema (MODIFICA ESTOS VALORES)
+   =============================================================== */
+:host {
+  // --- 🖌️ Colores Principales ---
+  --cal-bg: #ffffff;
+  --cal-text: #333333;
+  --cal-border: #f0f0f0; // Borde más suave
+  --cal-header-text: #888888;
+
+  // --- Estados de los días ---
+  --cal-today-bg: #e3f2fd;
+  --cal-today-text: #1e88e5;
+  --cal-selected-bg: var(--ion-color-primary, #3880ff);
+  --cal-selected-text: #ffffff;
+
+  // --- Otros elementos ---
+  --cal-event-dot: var(--ion-color-danger, #eb445a);
+  --cal-dim-text: #cccccc; // Días de otros meses, más tenues
+
+  // --- Fuentes ---
+  --font-size-base: 1rem; // Usamos rem para mejor accesibilidad
+  --font-size-header: 0.8rem;
+  --font-size-day-number: 0.9rem;
+}
+
+/* ===============================================================
+   ESTILOS GENERALES DEL COMPONENTE
+   =============================================================== */
+.calendar-container {
+  padding: 0 8px; // Evita que el calendario toque los bordes
+}
+
+// Estilo específico para la barra de segmentos para no afectar a las otras
+.view-switcher-toolbar {
+  --background: var(--cal-bg);
+  --border-color: var(--cal-border);
+
+  ion-segment-button {
+    --color: var(--cal-header-text);
+    --color-checked: var(--ion-color-primary);
+  }
+}
+
+/* ===============================================================
+   ESTILOS DE LA VISTA MENSUAL (mwl-calendar-month-view)
+   =============================================================== */
+// Usamos ::ng-deep para asegurar que los estilos penetren
+// el componente del calendario y anulen los estilos por defecto.
+::ng-deep mwl-calendar-month-view {
+  color: var(--cal-text);
+
+  .cal-header {
+    background-color: var(--cal-bg);
+    border-bottom: 2px solid var(--cal-border);
+    color: var(--cal-header-text);
+    font-size: var(--font-size-header);
+    font-weight: 600;
+  }
+
+  .cal-cell-row {
+    border-bottom: 1px solid var(--cal-border);
+  }
+
+  .cal-day-cell {
+    position: relative; 
+    background-color: var(--cal-bg);
+    min-height: 90px; 
+    transition: background-color 0.2s ease-in-out;
+
+    &:hover {
+      background-color: #fafafa;
+    }
+  }
+
+  // Número del día (estilo base para todos los días)
+  .cal-day-cell .cal-day-number {
+    font-size: var(--font-size-day-number);
+    margin-top: 5px;
+    margin-right: 5px;
+    font-weight: 500 !important; // Grosor de fuente normal para todos
+  }
+
+  // Día de HOY
+  .cal-today .cal-day-number {
+    background-color: var(--cal-today-bg);
+    color: var(--cal-today-text);
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    line-height: 28px;
+    text-align: center;
+    margin: auto;
+    font-weight: 500 !important; 
+    font-size: var(--font-size-day-number) !important; 
+  }
+  
+  // Día SELECCIONADO
+  .cal-day-cell.cal-day-cell-selected .cal-day-number,
+  .cal-day-cell.cal-open .cal-day-number {
+    background-color: var(--cal-selected-bg);
+    color: var(--cal-selected-text);
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    line-height: 28px;
+    text-align: center;
+    margin: auto;
+    font-weight: 500 !important; 
+  }
+
+  // Días que no están en el mes actual
+  .cal-cell:not(.cal-in-month) .cal-day-number {
+    color: var(--cal-dim-text);
+    background-color: transparent !important; 
+  }
+  
+  // Contenedor de eventos
+  .cal-events {
+    position: absolute;
+    bottom: 8px; 
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  // Estilo para los PUNTOS de evento (si se usan)
+  .cal-event-dot .cal-event {
+    width: 7px;
+    height: 7px;
+    margin: 0 1px; 
+  }
+}
+
+/* ===============================================================
+   Estilos para la lista de eventos del día seleccionado
+   =============================================================== */
+.selected-day-events {
+  margin-top: 10px;
+  border-top: 1px solid var(--cal-border);
+
+  ion-list-header {
+    font-weight: bold;
+    color: var(--ion-color-primary);
+    font-size: 1rem;
+  }
+
+  .event-item {
+    --padding-start: 16px;
+    --inner-padding-end: 16px;
+
+    .event-title {
+      font-weight: 500;
+      font-size: 0.95rem;
+    }
+    
+    .event-time {
+      font-size: 0.8rem;
+      color: #888;
+    }
+  }
+}
+

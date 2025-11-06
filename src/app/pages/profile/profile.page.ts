@@ -50,7 +50,7 @@ import { AuthenticationService, UserInfoResponse } from '../../services/authenti
   ]
 })
 export class ProfilePage implements OnInit {
-  loading = false;
+  loading: Boolean = false;
 
   // Controles auxiliares para inputs de chips
   enfermedadCtrl = new FormControl<string>('', { nonNullable: true });
@@ -79,6 +79,7 @@ export class ProfilePage implements OnInit {
     private toastCtrl: ToastController
   ) {}
 
+  
   ngOnInit() {
     // opcional: cargar también aquí la primera vez
     // this.loadProfile();
@@ -299,4 +300,6 @@ onDiscapacidadKeydown(ev: Event) {
   ev.stopPropagation();
   this.addDiscapacidad();
 }
+
+
 }
