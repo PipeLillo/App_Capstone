@@ -36,7 +36,7 @@ export class AuthenticationService {
   private provider = new GoogleAuthProvider();
 
   // ⚠️ Mueve esto a environment.ts en producción
- private firebaseConfig = {
+  private firebaseConfig = {
     apiKey: '',
     authDomain: '',
     projectId: '',

@@ -1,76 +1,155 @@
-import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
+//
+// 📍 LUGAR: src/app/pages/login/login.page.spec.ts
+//
+import { ComponentFixture, TestBed, waitForAsync, fakeAsync, tick } from '@angular/core/testing';
+import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
-import { RouterTestingModule } from '@angular/router/testing';
-import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { BehaviorSubject } from 'rxjs';
 import { User } from 'firebase/auth';
+import { By } from '@angular/platform-browser'; // Importar 'By'
 
-import { HomePage } from '../../home/home.page';
+// Componente y Servicio a probar/simular
+import { LoginPage } from './login.page';
 import { AuthenticationService } from '../../services/authentication.service';
 
-// --- SIMULACIÓN (MOCK) DEL SERVICIO DE AUTENTICACIÓN ---
-const mockAuthService = {
-  user$: new BehaviorSubject<User | null>(null)
-};
+// --- Creamos un usuario falso para las pruebas ---
+const mockUser = { uid: 'test-uid-123', email: 'test@test.com' } as User;
 
-describe('HomePage', () => {
-  let component: HomePage;
-  let fixture: ComponentFixture<HomePage>;
+
+describe('LoginPage', () => {
+  let component: LoginPage;
+  let fixture: ComponentFixture<LoginPage>;
+
+  // --- Mocks (simuladores) de las dependencias ---
+  let authServiceSpy: jasmine.SpyObj<AuthenticationService>;
+  let routerSpy: jasmine.SpyObj<Router>;
+  let userSubject: BehaviorSubject<User | null>;
 
   beforeEach(waitForAsync(() => {
+    
+    userSubject = new BehaviorSubject<User | null>(null);
+
+    authServiceSpy = jasmine.createSpyObj(
+      'AuthenticationService',
+      ['signInWithGoogle'],
+      { user$: userSubject.asObservable() }
+    );
+    
+    routerSpy = jasmine.createSpyObj('Router', ['navigateByUrl']);
+
     TestBed.configureTestingModule({
       imports: [
-        IonicModule.forRoot(),
-        RouterTestingModule,
-        HttpClientTestingModule,
-        HomePage,
+        LoginPage, // Importamos el componente Standalone
+        IonicModule.forRoot()
       ],
       providers: [
-        { provide: AuthenticationService, useValue: mockAuthService }
+        { provide: AuthenticationService, useValue: authServiceSpy },
+        { provide: Router, useValue: routerSpy }
       ]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(HomePage);
+    fixture = TestBed.createComponent(LoginPage);
     component = fixture.componentInstance;
   }));
 
-  it('should create', () => {
+  // --- Pruebas de Lógica (ngOnInit) ---
+  it('debería crear el componente', () => {
+    fixture.detectChanges();
     expect(component).toBeTruthy();
   });
 
-  it('should set greeting with display name on init', () => {
-    // Arrange: Preparamos un usuario de prueba con nombre.
-    const mockUser = { displayName: 'Felipe Pardo', email: 'test@test.com' } as User;
-    mockAuthService.user$.next(mockUser);
-
-    // Act: Disparamos la detección de cambios para que ngOnInit se ejecute.
-    fixture.detectChanges();
-
-    // Assert: Verificamos que el saludo se haya formateado correctamente.
-    expect(component.greeting).toBe('¡Hola, Felipe!');
+  it('debería navegar a /home si el usuario YA está logueado (ngOnInit)', () => {
+    userSubject.next(mockUser);
+    fixture.detectChanges(); // Dispara ngOnInit
+    expect(routerSpy.navigateByUrl).toHaveBeenCalledWith('/home', { replaceUrl: true });
   });
 
-  it('should set greeting with email prefix if display name is missing', () => {
-    // Arrange: Preparamos un usuario sin nombre pero con email.
-    const mockUser = { displayName: null, email: 'invitado@example.com' } as User;
-    mockAuthService.user$.next(mockUser);
-
-    // Act
+  it('NO debería navegar si el usuario NO está logueado (ngOnInit)', () => {
+    userSubject.next(null);
     fixture.detectChanges();
-
-    // Assert: Verificamos que se use el email como fallback.
-    expect(component.greeting).toBe('¡Hola, Invitado!');
+    expect(routerSpy.navigateByUrl).not.toHaveBeenCalled();
   });
+
   
-  it('should set default greeting if user is null', () => {
-    // Arrange: Simulamos que no hay ningún usuario logueado.
-    mockAuthService.user$.next(null);
+  // --- Pruebas de Interacción (DOM) ---
+
+  it('debería navegar a /home al hacer clic y tener éxito (Web/Popup)', fakeAsync(() => {
+    fixture.detectChanges(); // ngOnInit
+
+    // 1. Arrange
+    authServiceSpy.signInWithGoogle.and.resolveTo(mockUser);
     
-    // Act
+    // 2. Act
+    // 🔥 CORRECCIÓN: Usamos la clase '.google-signin-btn' de tu HTML
+    const button = fixture.debugElement.query(By.css('.google-signin-btn'));
+    button.triggerEventHandler('click', null);
+    
+    tick(); // Avanzamos el tiempo para que se resuelva la promesa
+
+    // 3. Assert
+    expect(authServiceSpy.signInWithGoogle).toHaveBeenCalledTimes(1);
+    expect(routerSpy.navigateByUrl).toHaveBeenCalledWith('/home', { replaceUrl: true });
+    expect(component.loading).toBe(false);
+  }));
+
+  it('debería mostrar y ocultar el spinner durante el clic', fakeAsync(() => {
     fixture.detectChanges();
 
-    // Assert: Verificamos que se muestre el saludo por defecto.
-    expect(component.greeting).toBe('¡Hola!');
-  });
-});
+    // 1. Arrange
+    authServiceSpy.signInWithGoogle.and.resolveTo(null); // Caso redirect (no navega)
+    const button = fixture.debugElement.query(By.css('.google-signin-btn'));
 
+    // 2. Act (Inicio del clic)
+    button.triggerEventHandler('click', null);
+    fixture.detectChanges(); // Actualizamos el DOM para que *ngIf muestre el spinner
+
+    // 3. Assert (Durante la carga)
+    // Buscamos el spinner por su etiqueta
+    const spinner = fixture.debugElement.query(By.css('ion-spinner'));
+    expect(spinner).toBeTruthy(); // El spinner DEBE existir
+    expect(component.loading).toBe(true);
+
+    // 4. Act (Fin de la promesa)
+    tick(); // Resolvemos la promesa
+    fixture.detectChanges(); // Actualizamos el DOM para que *ngIf oculte el spinner
+
+    // 5. Assert (Después de la carga)
+    const spinnerFinal = fixture.debugElement.query(By.css('ion-spinner'));
+    expect(spinnerFinal).toBeFalsy(); // El spinner DEBE desaparecer
+    expect(component.loading).toBe(false);
+  }));
+
+  it('debería mostrar un mensaje de error en el HTML si el login falla', fakeAsync(() => {
+    fixture.detectChanges();
+
+    // 1. Arrange
+    const errorSimulado = { message: 'Popup cerrado por el usuario' };
+    authServiceSpy.signInWithGoogle.and.rejectWith(errorSimulado);
+    const button = fixture.debugElement.query(By.css('.google-signin-btn'));
+
+    // 2. Act
+    button.triggerEventHandler('click', null);
+    tick(); // Resolvemos la promesa (con error)
+    fixture.detectChanges(); // Actualizamos el DOM para mostrar el error
+
+    // 3. Assert
+    // 🔥 CORRECCIÓN: Usamos la clase '.error-text' de tu HTML
+    const errorElement = fixture.debugElement.query(By.css('.error-text'));
+    expect(errorElement).toBeTruthy(); // El elemento de error debe existir
+    expect(errorElement.nativeElement.textContent).toContain('Popup cerrado por el usuario');
+    expect(component.loading).toBe(false);
+    expect(routerSpy.navigateByUrl).not.toHaveBeenCalled();
+  }));
+
+  it('NO debería llamar a signInWithGoogle() si ya está "loading"', () => {
+    fixture.detectChanges();
+    component.loading = true; // Forzamos el estado
+    
+    // Simulamos clic
+    const button = fixture.debugElement.query(By.css('.google-signin-btn'));
+    button.triggerEventHandler('click', null);
+
+    expect(authServiceSpy.signInWithGoogle).not.toHaveBeenCalled();
+  });
+
+});
