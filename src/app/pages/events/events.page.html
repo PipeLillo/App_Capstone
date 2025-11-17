@@ -1,0 +1,94 @@
+<!-- 
+  ION-HEADER
+  Define la barra de navegación superior.
+-->
+<ion-header>
+  <ion-toolbar color="primary">
+    <!-- Este botón es para volver atrás (si vienes de otra página) -->
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Crear Evento</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<!-- 
+  ION-CONTENT
+  El contenedor principal para todo el contenido de tu página.
+-->
+<ion-content class="ion-padding">
+
+  <!-- 
+    PASO 1: EL CALENDARIO
+    (ionChange) se conecta a tu archivo .ts (ver paso 3)
+  -->
+  <h2 class="text-xl font-semibold text-gray-700">Paso 1: Elige una fecha</h2>
+  <ion-datetime 
+    id="calendario"
+    presentation="date"
+    (ionChange)="fechaSeleccionada($event)"
+  ></ion-datetime>
+
+  <!-- 
+    PASO 2: EL FORMULARIO SECUNDARIO
+    
+    Usamos *ngIf="isFormVisible". Este contenedor SOLO existirá
+    en el HTML si nuestra variable 'isFormVisible' (en el .ts) es 'true'.
+  -->
+  <div *ngIf="isFormVisible" class="mt-4 border-l-4 border-blue-500 pl-3">
+    
+    <!-- 
+      Mostramos la fecha seleccionada usando interpolación.
+      'fechaSeleccionadaDisplay' es una variable en tu .ts
+    -->
+    <h3 class="text-lg font-semibold text-gray-700">
+      Añadir evento para: 
+      <span class="font-bold text-blue-600">{{ fechaSeleccionadaDisplay }}</span>
+    </h3>
+
+    <!-- 
+      ION-LIST y ION-ITEM
+      Agrupan los campos del formulario.
+    -->
+    <ion-list class="mt-4 rounded-lg shadow-inner">
+      <ion-item lines="full">
+        <ion-label position="floating">Mensaje del evento</ion-label>
+        <!-- 
+          [(ngModel)]="mensaje"
+          Esto es un "binding" de dos vías. Conecta este input
+          con la variable 'mensaje' en tu archivo .ts.
+          
+          IMPORTANTE: Para que [(ngModel)] funcione, debes importar
+          'FormsModule' en tu 'form_events.module.ts'.
+        -->
+        <ion-input 
+          type="text" 
+          [(ngModel)]="mensaje"
+          placeholder="Ej: Recordar tomar la pastilla"
+        ></ion-input>
+      </ion-item>
+    </ion-list>
+
+    <!-- 
+      BOTONES
+      Se conectan a las funciones (click)="guardarEvento()" 
+      y (click)="cancelar()" en tu archivo .ts.
+    -->
+    <ion-button 
+      (click)="guardarEvento()" 
+      expand="block" 
+      class="mt-4 rounded-lg">
+      Guardar Evento
+    </ion-button>
+    
+    <ion-button 
+      (click)="cancelar()"
+      expand="block" 
+      color="light"
+      class="mt-2 rounded-lg">
+      Cancelar
+    </ion-button>
+    
+  </div>
+  
+</ion-content>

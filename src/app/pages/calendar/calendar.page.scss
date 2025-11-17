@@ -161,5 +161,74 @@
       color: #888;
     }
   }
+
+  /* ... Todo tu código SCSS anterior ... */
+
+/* Estilos para el Modal del Formulario */
+ion-modal.auto-height-modal {
+  --height: auto;
+  --max-height: 85%; /* Altura máxima para que no toque los bordes */
+  --width: 90%;      /* Ancho del 90% de la pantalla */
+  --border-radius: 16px;
+  --box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+  /* Centrar el modal en la pantalla */
+  align-items: center;
+  justify-content: center;
+  
+  /* Asegurar que el contenido respete los bordes redondeados */
+  &::part(content) {
+    border-radius: 16px; 
+  }
 }
 
+}
+
+/* Estilos para el formulario de nueva toma */
+.input-item {
+  --background: #7c7c7c;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.color-label {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.color-picker-container {
+  display: flex;
+  justify-content: space-around; /* Distribuye los colores */
+  align-items: center;
+  padding: 10px 0;
+}
+
+.color-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+  border: 2px solid transparent;
+
+  ion-icon {
+    color: white;
+    font-size: 1.2rem;
+    font-weight: bold;
+  }
+
+  /* Estado seleccionado: crece un poco y tiene borde */
+  &.selected {
+    transform: scale(1.15);
+    box-shadow: 0 0 0 2px #333; /* Anillo exterior */
+  }
+  
+  &:active {
+    transform: scale(0.95);
+  }
+}

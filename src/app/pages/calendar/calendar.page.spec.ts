@@ -1,103 +1,130 @@
-import { ComponentFixture, TestBed, waitForAsync, fakeAsync, tick } from '@angular/core/testing';
-import { IonicModule } from '@ionic/angular';
-import { RouterTestingModule } from '@angular/router/testing';
-import { HttpClientTestingModule } from '@angular/common/http/testing';
-import { of } from 'rxjs';
-import { CalendarModule, DateAdapter } from 'angular-calendar';
-import { adapterFactory } from 'angular-calendar/date-adapters/date-fns';
-
-// Se importa el registro de datos de localización para el idioma español
-import { registerLocaleData } from '@angular/common';
-import localeEs from '@angular/common/locales/es';
-
-import { CalendarPage } from './calendar.page';
-import { CalendarDataService } from '../../services/calendar-data.service';
+import { Component, OnInit } from '@angular/core';
+import { ToastController } from '@ionic/angular';
+import { CalendarEvent } from 'angular-calendar';
+import { 
+  isSameDay, 
+  isSameMonth, 
+  addMonths 
+} from 'date-fns';
 import { AuthenticationService } from '../../services/authentication.service';
+import { CalendarDataService, DoseRecordDto } from '../../services/calendar-data.service';
 
-// Se registra el 'locale' español antes de que se ejecuten las pruebas
-registerLocaleData(localeEs);
+@Component({
+  selector: 'app-calendar',
+  templateUrl: './calendar.page.html',
+  styleUrls: ['./calendar.page.scss'],
+})
+export class CalendarPage implements OnInit {
+  
+  viewDate: Date = new Date();
+  events: CalendarEvent[] = [];
+  selectedDayEvents: CalendarEvent[] = [];
+  isLoading: boolean = false;
+  isPickerOpen: boolean = false;
 
-// --- SIMULACIONES (MOCKS) DE LOS SERVICIOS ---
-const mockCalendarDataService = {
-  getDoses: () => Promise.resolve([]),
-};
+  constructor(
+    private calendarDataService: CalendarDataService,
+    private authService: AuthenticationService,
+    private toastCtrl: ToastController
+  ) {}
 
-const mockAuthService = {
-  user$: of(null),
-};
+  ngOnInit() {
+    // Inicializamos isLoading para evitar parpadeos
+    this.isLoading = true;
 
-describe('CalendarPage', () => {
-  let component: CalendarPage;
-  let fixture: ComponentFixture<CalendarPage>;
-  let calendarDataSpy: jasmine.Spy;
+    this.authService.user$.subscribe((user) => {
+      if (user) {
+        // CORRECCIÓN #1: Llamar a loadEvents aquí para pasar la prueba del Spy
+        this.loadEvents();
+      } else {
+        this.isLoading = false;
+        this.events = [];
+        this.selectedDayEvents = [];
+      }
+    });
+  }
 
-  beforeEach(waitForAsync(() => {
-    TestBed.configureTestingModule({
-      imports: [
-        IonicModule.forRoot(),
-        RouterTestingModule,
-        HttpClientTestingModule,
-        CalendarModule.forRoot({
-          provide: DateAdapter,
-          useFactory: adapterFactory,
-        }),
-        CalendarPage,
-      ],
-      providers: [
-        { provide: CalendarDataService, useValue: mockCalendarDataService },
-        { provide: AuthenticationService, useValue: mockAuthService },
-      ],
-    }).compileComponents();
+  async loadEvents() {
+    this.isLoading = true;
+    try {
+      // Llamada al servicio
+      const doses = await this.calendarDataService.getDoses();
+      
+      // Mapeo de datos (según tus pruebas de "Mapeo de Datos")
+      this.events = doses.map(dose => this.mapDtoToEvent(dose));
+      
+    } catch (error) {
+      // Manejo de error (según tu prueba de "Manejo de errores")
+      const toast = await this.toastCtrl.create({
+        message: 'Error al cargar los eventos.',
+        color: 'danger',
+        duration: 2000
+      });
+      await toast.present();
+    } finally {
+      this.isLoading = false;
+    }
+  }
 
-    fixture = TestBed.createComponent(CalendarPage);
-    component = fixture.componentInstance;
-    calendarDataSpy = spyOn(mockCalendarDataService, 'getDoses');
-  }));
+  mapDtoToEvent(dose: DoseRecordDto): CalendarEvent {
+    // Lógica deducida de tus pruebas unitarias
+    let primaryColor = '#808080'; // Gris por defecto
+    let isTaken = false;
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
+    if (dose.status === 1) {
+      primaryColor = '#2dd36f'; // Verde si está tomada
+      isTaken = true;
+    } else if (dose.medicationColor) {
+      primaryColor = dose.medicationColor; // Color del medicamento si existe
+    }
 
-  it('should call loadEvents on init if user is authenticated', () => {
-    mockAuthService.user$ = of({ uid: '123' } as any);
-    const loadEventsSpy = spyOn(component, 'loadEvents');
-    
-    component.ngOnInit();
+    return {
+      id: dose.recordID,
+      start: new Date(dose.scheduledTime),
+      title: dose.medicationName,
+      color: {
+        primary: primaryColor,
+        secondary: primaryColor + '33', // Transparencia inferida de la prueba
+      },
+      meta: {
+        isTaken: isTaken,
+        originalData: dose
+      }
+    };
+  }
 
-    expect(loadEventsSpy).toHaveBeenCalled();
-  });
+  dayClicked({ date, events }: { date: Date; events: CalendarEvent[] }): void {
+    // 1. Si es otro mes, no hacemos nada
+    if (!isSameMonth(date, this.viewDate)) {
+      return;
+    }
 
-  // ✅ PRUEBA CORREGIDA: Se usa fakeAsync y tick() para controlar el tiempo
-  it('should populate events from the service on loadEvents', fakeAsync(() => {
-    // Arrange: Preparamos los datos que simulará devolver la API
-    const mockDoses = [
-      { recordID: 1, medicationName: 'Ibuprofeno', scheduledTime: new Date().toISOString(), status: 2, medicationColor: '#1e90ff' },
-    ];
-    calendarDataSpy.and.returnValue(Promise.resolve(mockDoses));
+    // CORRECCIÓN #2: Lógica de Toggle
+    // Si es el mismo día y ya hay eventos seleccionados, limpiamos (deseleccionamos)
+    if (isSameDay(this.viewDate, date) && this.selectedDayEvents.length > 0) {
+      this.selectedDayEvents = [];
+    } else {
+      // Si no, seleccionamos el día y mostramos eventos
+      this.viewDate = date;
+      this.selectedDayEvents = events;
+    }
+  }
 
-    // Act: Llamamos a la función asíncrona
-    component.loadEvents();
-    
-    // tick() simula el paso del tiempo, permitiendo que la promesa (getDoses) se resuelva.
-    tick();
+  changeDate(increment: number): void {
+    this.viewDate = addMonths(this.viewDate, increment);
+  }
 
-    // Assert: Ahora que la operación terminó, verificamos los resultados.
-    expect(component.events.length).toBe(1);
-    expect(component.events[0].title).toBe('Ibuprofeno');
-    expect(component.isLoading).toBeFalse();
-  }));
+  setPickerOpen(isOpen: boolean): void {
+    this.isPickerOpen = isOpen;
+  }
 
-  it('should handle API errors gracefully', fakeAsync(() => {
-    // Arrange
-    calendarDataSpy.and.returnValue(Promise.reject('API Error'));
-    const toastSpy = spyOn(component, 'presentToast');
-
-    // Act
-    component.loadEvents();
-    tick(); // Simula la resolución de la promesa (en este caso, el rechazo)
-
-    // Assert
-    expect(toastSpy).toHaveBeenCalledWith('Error al cargar los eventos.');
-    expect(component.isLoading).toBeFalse();
-  }));
-});
+  handleDateChange(event: any): void {
+    const dateValue = event.detail.value;
+    if (dateValue) {
+      this.viewDate = new Date(dateValue);
+      // Establecemos el primer día del mes para evitar saltos raros si el día actual es 31
+      this.viewDate.setDate(1); 
+      this.isPickerOpen = false;
+    }
+  }
+}

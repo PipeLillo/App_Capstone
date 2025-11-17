@@ -1,20 +1,16 @@
 <ion-content [fullscreen]="true">
   <div class="header-content">
     <div class="top-buttons">
-      <ion-button fill="solid" class="seg-btn active">Hoy</ion-button>
-      <ion-button fill="clear" class="seg-btn" routerLink="/calendar">Calendario</ion-button>
+      <ion-button fill="solid" class="seg-btn active" routerLink="/calendar">Calendario</ion-button>
 
-      <ion-button fill="solid" class="filter-button" routerLink="/profile">
-        <ion-icon name="person-circle-outline" slot="start"></ion-icon>
-        Perfil
-      </ion-button>
+      <ion-button fill="solid" class="filter-button" routerLink="/profile">Perfil</ion-button>
     </div>
 
     <div class="main-info">
       <img src="assets/icon/medic_png.png" alt="Logo MyZenit" class="brand-icon" />
       <h2>MyZenit</h2>
       <p class="greeting">{{ greeting }}</p>
-      <p class="subtitle">Tu salud, organizada</p>
+      <p class="subtitle">Estos son tus próximos medicamentos</p>
     </div>
   </div>
 

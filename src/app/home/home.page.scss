@@ -27,18 +27,25 @@ ion-content {
     height: 36px;
 
     &.active {
-      --background: #2ecc71;
+      --background: #2db5a3;
       --color: #fff;
     }
   }
 
   .filter-button {
     margin-left: auto;
-    --background: rgba(255, 255, 255, 0.18);
+    text-transform: none;
+    font-weight: 700;;
+    --background: #2db5a3;
     --color: #fff;
     backdrop-filter: blur(4px);
     --border-radius: 18px;
     height: 36px;
+
+    &.active {
+      --background: #2db5a3;
+      --color: #fff;
+    }
   }
 }
 

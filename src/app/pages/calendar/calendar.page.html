@@ -27,13 +27,11 @@
 </ion-header>
 
 <ion-content>
-  <!-- Indicador de Carga mientras se obtienen los datos -->
   <div *ngIf="isLoading" class="loading-container">
     <ion-spinner name="crescent"></ion-spinner>
     <p>Cargando tratamiento...</p>
   </div>
 
-  <!-- Contenido principal (se oculta mientras carga) -->
   <div [hidden]="isLoading">
     <div 
       class="calendar-container"
@@ -51,14 +49,12 @@
       </mwl-calendar-month-view>
     </div>
 
-    <!-- Lista de eventos (tomas) del día seleccionado -->
     <div *ngIf="selectedDayEvents.length > 0" class="selected-day-events">
       <ion-list-header class="ion-padding-horizontal">
         Tomas para el {{ viewDate | date:'d MMMM':'es' }}
       </ion-list-header>
       <ion-list lines="none">
         <ion-item *ngFor="let event of selectedDayEvents" class="event-item">
-          <!-- Icono para indicar el estado (Tomado / Pendiente) -->
           <ion-icon 
             slot="start" 
             [name]="event.meta.isTaken ? 'checkmark-circle' : 'calendar-outline'"
@@ -74,7 +70,6 @@
   </div>
 </ion-content>
 
-<!-- Modal con el selector de fecha -->
 <ion-modal [isOpen]="isPickerOpen" (didDismiss)="setPickerOpen(false)">
   <ng-template>
     <ion-header>
@@ -96,17 +91,128 @@
   </ng-template>
 </ion-modal>
 
-<!-- Template personalizado para las celdas del mes -->
+<ion-modal [isOpen]="isFormOpen" (didDismiss)="setFormOpen(false)" class="auto-height-modal">
+  <ng-template>
+    <ion-header>
+      <ion-toolbar>
+        <ion-title>Nuevo Tratamiento</ion-title>
+        <ion-buttons slot="end">
+          <ion-button (click)="setFormOpen(false)">
+            <ion-icon name="close-outline" slot="icon-only"></ion-icon>
+          </ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+
+    <ion-content class="ion-padding">
+      <div class="ion-text-center ion-margin-bottom">
+        <ion-note color="medium">Inicio del tratamiento:</ion-note>
+        <h3 class="ion-no-margin">{{ selectedDateForForm | date:'dd MMMM yyyy':'es' }}</h3>
+      </div>
+
+      <ion-list lines="none">
+        <ion-item class="input-item">
+          <ion-input 
+            label="Medicamento" 
+            labelPlacement="floating" 
+            [(ngModel)]="formData.medicationName" 
+            placeholder="Ej: Paracetamol">
+          </ion-input>
+        </ion-item>
+
+        <ion-item class="input-item">
+          <ion-input 
+            label="Dosis (mg)" 
+            labelPlacement="floating" 
+            type="number"
+            [(ngModel)]="formData.dose" 
+            placeholder="Ej: 500">
+          </ion-input>
+        </ion-item>
+
+        <ion-item class="input-item">
+          <ion-input 
+            label="Repetir cada (horas)" 
+            labelPlacement="floating" 
+            type="number"
+            [(ngModel)]="formData.frequency" 
+            placeholder="Ej: 8">
+          </ion-input>
+        </ion-item>
+
+        <ion-item class="input-item">
+          <ion-label>Hora 1ra toma</ion-label>
+          <ion-datetime-button slot="end" datetime="timepicker"></ion-datetime-button>
+          <ion-modal [keepContentsMounted]="true">
+            <ng-template>
+              <ion-datetime 
+                id="timepicker" 
+                presentation="time" 
+                [(ngModel)]="formData.scheduledTime"
+                preferWheel="true">
+              </ion-datetime>
+            </ng-template>
+          </ion-modal>
+        </ion-item>
+
+        <ion-item class="input-item">
+          <ion-label>Fecha término</ion-label>
+          <ion-datetime-button slot="end" datetime="endDatePicker"></ion-datetime-button>
+          <ion-modal [keepContentsMounted]="true">
+            <ng-template>
+              <ion-datetime 
+                id="endDatePicker" 
+                presentation="date" 
+                [(ngModel)]="formData.endDate" 
+                locale="es-ES">
+              </ion-datetime>
+            </ng-template>
+          </ion-modal>
+        </ion-item>
+
+        <div class="ion-padding-vertical">
+          <ion-label class="ion-padding-start color-label">Color etiqueta</ion-label>
+          <div class="color-picker-container">
+            <div 
+              *ngFor="let color of availableColors"
+              class="color-circle"
+              [style.background]="color"
+              [class.selected]="formData.selectedColor === color"
+              (click)="selectColor(color)">
+              <ion-icon name="checkmark" *ngIf="formData.selectedColor === color"></ion-icon>
+            </div>
+          </div>
+        </div>
+
+        <ion-item class="input-item">
+          <ion-textarea 
+            label="Notas (Opcional)" 
+            labelPlacement="floating" 
+            [(ngModel)]="formData.notes" 
+            rows="2"
+            placeholder="Ej: Con el desayuno">
+          </ion-textarea>
+        </ion-item>
+      </ion-list>
+
+      <div class="ion-padding-top">
+        <ion-button expand="block" (click)="saveForm()">
+          Crear Tratamiento
+        </ion-button>
+      </div>
+    </ion-content>
+  </ng-template>
+</ion-modal>
+
 <ng-template #customCellTemplate let-day="day" let-locale="locale">
   <div class="cal-cell-top">
     <span class="cal-day-number">{{ day.date | calendarDate:'monthViewDayNumber':locale }}</span>
   </div>
   <div class="cal-events" *ngIf="day.events.length > 0">
     <div
-      class="cal-event"
-      *ngFor="let event of day.events"
-      [style.backgroundColor]="event.color?.primary"
-    ></div>
+  class="cal-event"
+  *ngFor="let event of getUniqueEvents(day.events)" 
+  [style.backgroundColor]="event.color?.primary"
+></div>
   </div>
 </ng-template>
-

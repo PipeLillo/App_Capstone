@@ -3,13 +3,12 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { AuthenticationService } from './authentication.service';
 
-// ✅ INTERFAZ ACTUALIZADA: Se añade medicationColor.
 export interface DoseRecordDto {
   recordID: number;
   medicationName: string;
-  medicationColor: string | null; // Color en formato hexadecimal (ej: '#ad2121')
+  medicationColor: string | null;
   scheduledTime: string;
-  status: number; // 2: Pendiente, 1: Tomado
+  status: number; 
 }
 
 @Injectable({
@@ -18,29 +17,57 @@ export interface DoseRecordDto {
 export class CalendarDataService {
 
   private apiUrl = '';
-  private apiKey = ''; // ❗ Reemplaza con tu clave de API
+  
+  // 🔑 CLAVE 1: Para LEER datos (getdoses) - La que ya tenías
+  private apiKeyGet = '';
+
+  // 🔑 CLAVE 2: Para GUARDAR datos (savetreatment) - La nueva
+  private apiKeySave = '';
 
   constructor(
     private http: HttpClient,
     private authService: AuthenticationService
   ) { }
 
-  private getAuthHeaders(): HttpHeaders {
+  /**
+   * Helper dinámico: Genera los headers usando la clave que le pases.
+   */
+  private getAuthHeaders(key: string): HttpHeaders {
     return new HttpHeaders({
       'Content-Type': 'application/json',
-      'x-functions-key': this.apiKey,
+      'x-functions-key': key, 
     });
   }
 
+  // --- OBTENER DOSIS (Usa la clave antigua) ---
   async getDoses(): Promise<DoseRecordDto[]> {
     const uid = this.authService.currentUser?.uid;
     if (!uid) {
       return [];
     }
-
-    const url = `${this.apiUrl}/getdoses?firebaseUid=${uid}&code=${this.apiKey}`;
+    const url = `${this.apiUrl}/getdoses?firebaseUid=${uid}&_t=${new Date().getTime()}`;
     
-    return firstValueFrom(this.http.get<DoseRecordDto[]>(url, { headers: this.getAuthHeaders() }));
+    // Pasamos apiKeyGet
+    return firstValueFrom(
+      this.http.get<DoseRecordDto[]>(url, { headers: this.getAuthHeaders(this.apiKeyGet) })
+    );
+  }
+
+  // --- GUARDAR TRATAMIENTO (Usa la clave nueva) ---
+  async saveTreatment(treatmentData: any): Promise<any> {
+    const uid = this.authService.currentUser?.uid;
+    if (!uid) throw new Error('No hay usuario logueado');
+
+    const url = `${this.apiUrl}/savetreatment`;
+    
+    const payload = {
+      ...treatmentData,
+      firebaseUid: uid
+    };
+
+    // Pasamos apiKeySave
+    return firstValueFrom(
+      this.http.post(url, payload, { headers: this.getAuthHeaders(this.apiKeySave) })
+    );
   }
 }
-
