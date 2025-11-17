@@ -2,6 +2,7 @@
   <div class="header-content">
     <div class="top-buttons">
       <ion-button fill="solid" class="seg-btn active" routerLink="/calendar">Calendario</ion-button>
+      <ion-button fill="solid" class="seg-btn active" routerLink="/chatbot">Chatbot</ion-button>
 
       <ion-button fill="solid" class="filter-button" routerLink="/profile">Perfil</ion-button>
     </div>
@@ -15,98 +16,62 @@
   </div>
 
   <div class="cards-stack">
-    <!-- Rutina de hoy -->
-    <ion-card class="home-card">
-      <ion-item lines="none">
-        <div class="card-content-wrapper">
-          <div class="text-content">
-            <p class="eyebrow">Rutina de hoy</p>
-            <h3 class="card-title">2 tareas pendientes</h3>
-            <ul class="bullet-list">
-              <li>Tomar Losartán 50mg a las <strong>08:00</strong>.</li>
-              <li>Registrar presión arterial después del almuerzo.</li>
-            </ul>
-            <div class="progress">
-              <div class="progress-bar" style="width: 50%"></div>
-            </div>
-            <p class="hint">Progreso de hoy: 1/2</p>
-          </div>
-          <div class="image-wrapper circle">
-            <img src="assets/icon/medic_png.png" alt="Ilustración salud" />
-          </div>
-        </div>
-      </ion-item>
-      <div class="card-actions">
-        <ion-button size="small" fill="outline">
-          <ion-icon name="checkbox-outline" slot="start"></ion-icon>
-          Marcar completado
-        </ion-button>
-        <ion-button size="small" fill="clear">Ver detalle</ion-button>
-      </div>
-    </ion-card>
 
-    <!-- Próxima cita -->
-    <ion-card class="home-card">
+    <ion-card class="home-card" *ngFor="let evento of proximosEventos">
       <ion-item lines="none">
         <div class="card-content-wrapper">
           <div class="text-content">
-            <p class="eyebrow">Próxima cita</p>
-            <h3 class="card-title">Dr. Pérez — Cardiología</h3>
-            <p class="muted">Clínica Santa María</p>
-            <p class="badge date">Lun 14 Oct, 10:30</p>
-            <p class="hint">Llega 10 min antes para el check-in</p>
+            <br>
+            <h3 class="card-title">{{ evento.medicationName }}</h3>
+            
+            <p class="badge date">
+              {{ evento.scheduledTime | date:'MMMM d, HH:mm' }}
+            </p>
+            
           </div>
-          <div class="image-wrapper soft">
-            <img src="assets/icon/medic_png.png" alt="Calendario" />
-          </div>
+          
         </div>
       </ion-item>
+      
       <div class="card-actions">
-        <ion-button size="small" fill="outline" routerLink="/datetime">
-          <ion-icon name="calendar-outline" slot="start"></ion-icon>
+        <ion-button size="small" fill="outline" routerLink="/calendar">
           Ver calendario
         </ion-button>
-        <ion-button size="small" fill="clear">Indicaciones</ion-button>
-      </div>
-    </ion-card>
+        
 
-    <!-- Recordatorios -->
-    <ion-card class="home-card">
+        <ion-button 
+            size="small" 
+            fill="solid" 
+            color="success"
+            (click)="marcarComoTomado(evento)">
+          Tomado
+        </ion-button>
+      </div>
+      </ion-card>
+
+    <div *ngIf="isLoading" style="text-align: center; padding: 20px;">
+      <ion-spinner name="crescent"></ion-spinner>
+    </div>
+
+    <ion-card class="home-card" *ngIf="proximosEventos.length === 0 && !isLoading">
       <ion-item lines="none">
         <div class="card-content-wrapper">
           <div class="text-content">
-            <p class="eyebrow">Recordatorios</p>
-            <h3 class="card-title">Examen pendiente</h3>
-            <p class="muted">Perfil lipídico — laboratorio recomendado</p>
-            <p class="badge warning">Vence en 10 días</p>
-          </div>
-          <div class="image-wrapper">
-            <img src="assets/icon/medic_png.png" alt="Laboratorio" />
+            <p class="eyebrow">¡Todo listo!</p>
+            <h3 class="card-title">No tienes próximos medicamentos</h3>
+            <p class="hint">Tus dosis programadas aparecerán aquí.</p>
           </div>
         </div>
       </ion-item>
-      <div class="card-actions">
-        <ion-button size="small" fill="outline">
-          <ion-icon name="flask-outline" slot="start"></ion-icon>
-          Ver indicaciones
-        </ion-button>
-        <ion-button size="small" fill="clear">Marcar como hecho</ion-button>
-      </div>
     </ion-card>
+
   </div>
+
 </ion-content>
 
-<!-- Bottom tabs -->
 <ion-tab-bar slot="bottom">
-  <ion-tab-button tab="hoy">
-    <ion-icon name="home-outline"></ion-icon>
-    <ion-label>Hoy</ion-label>
-  </ion-tab-button>
 
-  <ion-tab-button tab="anuncios">
-    <ion-icon name="megaphone-outline"></ion-icon>
-    <ion-label>Calendario</ion-label>
-  </ion-tab-button>
+
 
   <ion-tab-button tab="anuncios">
     <ion-icon name="megaphone-outline"></ion-icon>
@@ -118,8 +83,4 @@
     <ion-label>Mensajes</ion-label>
   </ion-tab-button>
 
-  <ion-tab-button tab="menu">
-    <ion-icon name="menu-outline"></ion-icon>
-    <ion-label>Menú</ion-label>
-  </ion-tab-button>
 </ion-tab-bar>

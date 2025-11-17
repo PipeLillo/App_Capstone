@@ -33,7 +33,11 @@ export const routes: Routes = [
   {
     path: 'events',
     loadComponent: () => import('./pages/events/events.page').then( m => m.EventsPage)
+  },  {
+    path: 'chatbot',
+    loadComponent: () => import('./chatbot/chatbot.page').then( m => m.ChatbotPage)
   },
+
 
  
 
