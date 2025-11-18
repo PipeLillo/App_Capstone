@@ -4,7 +4,7 @@ const admin = require("firebase-admin");
 
 /* -------------------------------------------------------------
    🔐 Inicializar Firebase Admin (config de Application Settings)
--------------------------------------------------------------- */
+------------------------- */
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert({
@@ -292,3 +292,4 @@ app.http('getfullevents', {
     }
   }
 });
+
