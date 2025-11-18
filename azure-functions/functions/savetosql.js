@@ -1,35 +1,5 @@
 const { app } = require('@azure/functions');
 const mssql = require('mssql');
-const admin = require("firebase-admin");
-const serviceAccount = require("./firebase-service-account.json");
-
-/**
- * Inicializar Firebase Admin (para validar ID Tokens)
- */
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
-});
-
-/**
- * Verificar token Firebase enviado en Authorization: Bearer <token>
- */
-async function verifyFirebaseToken(request, context) {
-  const authHeader = request.headers.get("authorization") || "";
-
-  if (!authHeader.startsWith("Bearer ")) {
-    return { valid: false, error: "Missing Bearer token" };
-  }
-
-  const idToken = authHeader.split(" ")[1];
-
-  try {
-    const decoded = await admin.auth().verifyIdToken(idToken);
-    return { valid: true, uid: decoded.uid };
-  } catch (err) {
-    context.log("Error verifying Firebase ID token:", err);
-    return { valid: false, error: "Invalid ID token" };
-  }
-}
 
 /**
  * Config común de base de datos.
@@ -52,11 +22,14 @@ app.http('savetosql', {
   methods: ['POST'],
   authLevel: 'function',
   handler: async (request, context) => {
+    context.log('Función HTTP (savetosql) procesando una solicitud.');
+
     try {
       const { firebaseUid, userEmail, displayName, photoURL } = await request.json();
 
-      if (!firebaseUid)
+      if (!firebaseUid) {
         return { status: 400, body: "Por favor, pase un UID de Firebase válido." };
+      }
 
       await mssql.connect(baseDbConfig);
 
@@ -101,6 +74,8 @@ app.http('updateuserinfo', {
   methods: ['POST'],
   authLevel: 'function',
   handler: async (request, context) => {
+    context.log('Función HTTP (updateuserinfo) procesando una solicitud.');
+
     try {
       const body = await request.json();
       const {
@@ -139,7 +114,7 @@ app.http('updateuserinfo', {
 
       const result = await dbRequest.query(query);
 
-      if (!result.rowsAffected[0])
+      if (result.rowsAffected[0] === 0)
         return { status: 404, body: "Usuario no encontrado." };
 
       return { status: 200, body: "Información actualizada." };
@@ -234,59 +209,46 @@ app.http('getdoses', {
 });
 
 // -------------------------------------------------------------
-// --- FUNCIÓN 5: getfullevents (Vista Completa + Token) ---
+// --- FUNCIÓN 5: getfullevents (Vista Completa) ---
 // -------------------------------------------------------------
 app.http('getfullevents', {
   methods: ['GET', 'POST'],
-  authLevel: 'anonymous',
+  authLevel: 'function',
   handler: async (request, context) => {
-    context.log('Función HTTP (getfullevents) procesando solicitud.');
+    context.log("Ejecutando getfullevents...");
 
-    // 1. Validar token
-    const validation = await verifyFirebaseToken(request, context);
-    if (!validation.valid) {
-      return { status: 401, jsonBody: { error: validation.error } };
+    let firebaseUid = null;
+
+    if (request.method === 'GET') {
+      firebaseUid = request.query.get('firebaseUid');
+    } else {
+      const body = await request.json().catch(() => null);
+      firebaseUid = body?.firebaseUid;
     }
 
-    const uidFromToken = validation.uid;
-
-    // 2. Leer firebaseUid del request
-    let firebaseUid = request.method === 'GET'
-      ? request.query.get('firebaseUid')
-      : (await request.json())?.firebaseUid;
-
-    if (!firebaseUid) {
-      return { status: 400, jsonBody: { error: "El parámetro 'firebaseUid' es obligatorio." } };
-    }
-
-    // 3. Seguridad: evitar acceso a otros usuarios
-    if (firebaseUid !== uidFromToken) {
-      return {
-        status: 403,
-        jsonBody: { error: "No tienes permiso para consultar datos de otro usuario." }
-      };
-    }
+    if (!firebaseUid)
+      return { status: 400, jsonBody: { error: "firebaseUid requerido" } };
 
     try {
       await mssql.connect(baseDbConfig);
+
       const db = new mssql.Request();
       db.input('firebaseUid', mssql.NVarChar(128), firebaseUid);
 
-      const result = await db.query(`
+      const query = `
         SELECT *
         FROM vw_UserEventsFull
         WHERE FirebaseUid = @firebaseUid
         ORDER BY ScheduledTime ASC;
-      `);
+      `;
 
-      return {
-        status: 200,
-        jsonBody: result.recordset
-      };
+      const result = await db.query(query);
+
+      return { status: 200, jsonBody: result.recordset };
 
     } catch (err) {
-      context.log("Error en getfullevents:", err);
-      return { status: 500, jsonBody: { error: "Error interno." } };
+      context.log('Error', err);
+      return { status: 500, jsonBody: { error: "Error interno al obtener datos" } };
     } finally {
       mssql.close();
     }
