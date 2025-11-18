@@ -1,0 +1,180 @@
+/* ================================================= */
+/* ESTILOS COPIADOS DE HOME.PAGE.SCSS         */
+/* ================================================= */
+
+/* Fondo general */
+ion-content {
+  --background: #f5f7fb;
+}
+
+/* =================== Header =================== */
+.header-content {
+  background: linear-gradient(135deg, #3498db, #6c5ce7);
+  padding: 16px 16px 24px;
+  border-bottom-left-radius: 24px;
+  border-bottom-right-radius: 24px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* Botones superiores */
+.top-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; // Para separar "Volver" y "Logout"
+  gap: 8px;
+  margin-bottom: 12px;
+
+  /* Estilo para el botón "Volver" */
+  .seg-btn {
+    text-transform: none;
+    font-weight: 700;
+    --color: #ecf0f1;
+    --border-radius: 20px;
+    height: 36px;
+    --background: rgba(255, 255, 255, 0.1);
+    --padding-start: 12px;
+    --padding-end: 12px;
+
+    &.active {
+      --background: #2db5a3;
+      --color: #fff;
+    }
+  }
+
+  /* Estilo para el botón "Logout" */
+  .filter-button {
+    margin-left: auto;
+    text-transform: none;
+    font-weight: 700;
+    --background: rgba(255, 255, 255, 0.15);
+    --color: #fff;
+    --border-radius: 20px; /* <-- CAMBIADO (de 50%) */
+    height: 36px;
+    /* width: 36px; (Línea eliminada) */
+  }
+}
+
+/* Marca */
+.main-info {
+  text-align: center;
+  padding-top: 8px;
+
+  .brand-icon {
+    width: 84px;
+    height: 84px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.12);
+    padding: 10px;
+    margin-bottom: 8px;
+  }
+
+  h2 {
+    color: #ffffff;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+    margin: 0;
+  }
+
+  .subtitle {
+    margin: 4px 0 0;
+    color: #e9ecff;
+    font-size: 0.9rem;
+    opacity: 0.95;
+  }
+}
+
+/* =================== Cards stack =================== */
+.cards-stack {
+  padding: 16px;
+}
+
+/* Tarjeta genérica */
+.home-card {
+  border-radius: 16px;
+  margin: 14px 0;
+  background: #ffffff;
+  box-shadow: 0 6px 24px rgba(20, 37, 63, 0.08);
+
+  ion-card-header {
+    padding-bottom: 8px;
+  }
+  ion-card-title {
+    color: #203049;
+    font-size: 1.1rem;
+    font-weight: 800;
+  }
+
+  ion-card-content {
+    padding-top: 0;
+
+    ion-list {
+      background: transparent;
+      padding-top: 0;
+      padding-bottom: 0;
+
+      ion-item {
+        --background: transparent;
+        --padding-start: 0;
+        --inner-padding-end: 0;
+        padding-right: 0;
+
+        ion-label {
+          color: #000000; // Color para la etiqueta (Ej: "Peso (kg)")
+          font-weight: 500;
+        }
+
+        ion-input,
+        ion-textarea {
+          --color: #222; // Color del texto que escribes
+          /* --- CORRECCIÓN DE PLACEHOLDER --- */
+          --placeholder-color: #3e94d6; // Color del texto de placeholder (Celeste)
+        }
+      }
+    }
+  }
+  
+}
+
+
+/* ================================================= */
+/* ESTILOS NUEVOS PARA PROFILE.PAGE.SCSS      */
+/* ================================================= */
+
+.input-with-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+
+  ion-input {
+    flex: 1;
+  }
+  
+  ion-button {
+    flex-shrink: 0;
+    --padding-start: 10px;
+    --padding-end: 10px;
+
+    /* --- CORRECCIÓN DE COLOR (BOTÓN AÑADIR) --- */
+    --background: #2db5a3;
+    --color: #ffffff;
+    --border-color: #2db5a3; // Anula el color del 'outline'
+  }
+}
+
+.chips-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-bottom: 8px;
+}
+
+ion-list[lines="inset"] ion-item:last-of-type {
+  --inner-border-width: 0;
+}
+
+/* --- Estilo para el botón "Guardar cambios" --- */
+.ion-padding-horizontal ion-button[type="submit"] {
+  --background: #2db5a3;
+  --color: #ffffff; // Color del texto (blanco) para mejor contraste
+}

@@ -4,12 +4,12 @@ import { ReactiveFormsModule, FormBuilder, Validators, FormArray, FormControl } 
 import { RouterModule } from '@angular/router';
 import {
   IonContent,
-  IonHeader,
-  IonTitle,
-  IonToolbar,
+  // IonHeader, <-- ELIMINADO
+  // IonTitle, <-- ELIMINADO
+  // IonToolbar, <-- ELIMINADO
   IonButton,
   IonIcon,
-  IonButtons,
+  // IonButtons, <-- ELIMINADO
   IonBackButton,
   IonItem,
   IonLabel,
@@ -17,7 +17,12 @@ import {
   IonTextarea,
   IonList,
   IonChip,
-  IonSpinner
+  IonSpinner,
+  // --- AÑADIDOS ---
+  IonCard,
+  IonCardHeader,
+  IonCardTitle,
+  IonCardContent
 } from '@ionic/angular/standalone';
 import { ToastController } from '@ionic/angular';
 
@@ -33,12 +38,12 @@ import { AuthenticationService, UserInfoResponse } from '../../services/authenti
     ReactiveFormsModule,
     RouterModule,
     IonContent,
-    IonHeader,
-    IonTitle,
-    IonToolbar,
+    // IonHeader, <-- ELIMINADO
+    // IonTitle, <-- ELIMINADO
+    // IonToolbar, <-- ELIMINADO
     IonButton,
     IonIcon,
-    IonButtons,
+    // IonButtons, <-- ELIMINADO
     IonBackButton,
     IonItem,
     IonLabel,
@@ -46,7 +51,12 @@ import { AuthenticationService, UserInfoResponse } from '../../services/authenti
     IonTextarea,
     IonList,
     IonChip,
-    IonSpinner
+    IonSpinner,
+    // --- AÑADIDOS ---
+    IonCard,
+    IonCardHeader,
+    IonCardTitle,
+    IonCardContent
   ]
 })
 export class ProfilePage implements OnInit {
@@ -245,10 +255,10 @@ export class ProfilePage implements OnInit {
   }
 
   // Enter para inputs (evita submit accidental del formulario)
-preventFormSubmit(ev: Event) {
-  ev.preventDefault();
-  ev.stopPropagation();
-}
+  preventFormSubmit(ev: Event) {
+    ev.preventDefault();
+    ev.stopPropagation();
+  }
 
   /**
    * Normaliza un control numérico a número o null al salir del campo (ionBlur).
@@ -283,23 +293,21 @@ preventFormSubmit(ev: Event) {
   }
 
   // Enter para inputs de chips
-onEnfermedadKeydown(ev: Event) {
-  ev.preventDefault();
-  ev.stopPropagation();
-  this.addEnfermedad();
-}
+  onEnfermedadKeydown(ev: Event) {
+    ev.preventDefault();
+    ev.stopPropagation();
+    this.addEnfermedad();
+  }
 
-onAlergiaKeydown(ev: Event) {
-  ev.preventDefault();
-  ev.stopPropagation();
-  this.addAlergia();
-}
+  onAlergiaKeydown(ev: Event) {
+    ev.preventDefault();
+    ev.stopPropagation();
+    this.addAlergia();
+  }
 
-onDiscapacidadKeydown(ev: Event) {
-  ev.preventDefault();
-  ev.stopPropagation();
-  this.addDiscapacidad();
-}
-
-
+  onDiscapacidadKeydown(ev: Event) {
+    ev.preventDefault();
+    ev.stopPropagation();
+    this.addDiscapacidad();
+  }
 }
