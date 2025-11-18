@@ -17,7 +17,7 @@ export interface DoseRecordDto {
 export class CalendarDataService {
 
   private apiUrl = '';
-  
+
   // 🔑 CLAVE 1: Para LEER datos (getdoses) - La que ya tenías
   private apiKeyGet = '';
 
