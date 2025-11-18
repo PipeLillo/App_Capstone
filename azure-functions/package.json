@@ -1,14 +1,15 @@
 {
   "name": "azure-functions",
   "version": "1.0.0",
-  "description": "",
+  "description": "API de Azure Functions con Firebase Admin y MSSQL",
   "main": "index.js",
   "scripts": {
     "start": "func start",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"No test\""
   },
   "dependencies": {
     "@azure/functions": "^4.0.0",
+    "firebase-admin": "^12.0.0",
     "mssql": "^11.0.1"
   }
 }
