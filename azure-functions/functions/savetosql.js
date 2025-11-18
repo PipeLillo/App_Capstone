@@ -245,7 +245,7 @@ app.http('getdoses', {
 // ---------------------------------------------------------------------
 app.http('getfullevents', {
   methods: ['GET', 'POST'],
-  authLevel: 'function',
+  authLevel: 'anonymous',
   handler: async (request, context) => {
 
     context.log("Ejecutando getfullevents...");
@@ -303,4 +303,5 @@ app.http('getfullevents', {
     }
   }
 });
+
 
