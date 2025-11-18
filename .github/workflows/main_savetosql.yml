@@ -4,11 +4,12 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 env:
-  AZURE_FUNCTIONAPP_NAME: 'savetosql'
-  NODE_VERSION: '20.x'
+  NODE_VERSION: '20'
   PACKAGE_DIRECTORY: './azure-functions'
+  AZURE_FUNCTIONAPP_NAME: 'savetosql'
 
 permissions:
   id-token: write
@@ -19,10 +20,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout
+    - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup Node
+    - name: Login to Azure
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: ${{ env.NODE_VERSION }}
@@ -31,13 +37,13 @@ jobs:
       working-directory: ${{ env.PACKAGE_DIRECTORY }}
       run: npm install
 
-    - name: Archive Azure Function App
+    - name: Zip package (including node_modules)
       run: |
         cd ${{ env.PACKAGE_DIRECTORY }}
-        zip -r ../app.zip .
+        zip -r ../package.zip .
 
     - name: Deploy to Azure Functions
       uses: azure/functions-action@v1
       with:
         app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
-        package: app.zip
+        package: package.zip
