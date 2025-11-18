@@ -1,9 +1,44 @@
 const { app } = require('@azure/functions');
 const mssql = require('mssql');
+const admin = require("firebase-admin");
 
-/**
- * Config común de base de datos.
- */
+/* -------------------------------------------------------------
+   🔐 Inicializar Firebase Admin (config de Application Settings)
+-------------------------------------------------------------- */
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    })
+  });
+}
+
+/* -------------------------------------------------------------
+   🔐 Función para validar Firebase ID Token
+-------------------------------------------------------------- */
+async function verifyFirebaseToken(request, context) {
+  try {
+    const authHeader = request.headers.get("authorization") || "";
+    if (!authHeader.startsWith("Bearer ")) {
+      return { valid: false, error: "Authorization Bearer token missing." };
+    }
+
+    const token = authHeader.replace("Bearer ", "").trim();
+    const decoded = await admin.auth().verifyIdToken(token);
+
+    return { valid: true, uid: decoded.uid };
+
+  } catch (err) {
+    context.log("Firebase Auth error:", err);
+    return { valid: false, error: "Invalid Firebase ID token." };
+  }
+}
+
+/* -------------------------------------------------------------
+   📦 Config DB
+-------------------------------------------------------------- */
 const baseDbConfig = {
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
@@ -15,47 +50,40 @@ const baseDbConfig = {
   }
 };
 
-// -------------------------------------------------------------
-// --- FUNCIÓN 1: savetosql ---
-// -------------------------------------------------------------
+/* -------------------------------------------------------------
+   FUNCIÓN 1: savetosql
+-------------------------------------------------------------- */
 app.http('savetosql', {
   methods: ['POST'],
   authLevel: 'function',
   handler: async (request, context) => {
-    context.log('Función HTTP (savetosql) procesando una solicitud.');
-
     try {
       const { firebaseUid, userEmail, displayName, photoURL } = await request.json();
 
-      if (!firebaseUid) {
-        return { status: 400, body: "Por favor, pase un UID de Firebase válido." };
-      }
+      if (!firebaseUid)
+        return { status: 400, body: "Por favor, pase un UID válido." };
 
       await mssql.connect(baseDbConfig);
 
       const dbRequest = new mssql.Request();
       dbRequest.input('firebaseUid', mssql.NVarChar(128), firebaseUid);
+      dbRequest.input('userEmail', mssql.NVarChar(255), userEmail || null);
+      dbRequest.input('displayName', mssql.NVarChar(255), displayName || null);
+      dbRequest.input('photoURL', mssql.NVarChar(512), photoURL || null);
 
       const query = `
         MERGE dbo.Users AS target
         USING (SELECT @firebaseUid AS FirebaseUid) AS source
         ON (target.FirebaseUid = source.FirebaseUid)
-        WHEN MATCHED THEN
-            UPDATE SET 
-                DisplayName = @displayName,
-                PhotoURL = @photoURL,
-                Email = @userEmail
-        WHEN NOT MATCHED THEN
-            INSERT (FirebaseUid, Email, DisplayName, PhotoURL)
+        WHEN MATCHED THEN UPDATE SET 
+            DisplayName = @displayName,
+            PhotoURL = @photoURL,
+            Email = @userEmail
+        WHEN NOT MATCHED THEN INSERT (FirebaseUid, Email, DisplayName, PhotoURL)
             VALUES (@firebaseUid, @userEmail, @displayName, @photoURL);
       `;
 
-      dbRequest.input('userEmail', mssql.NVarChar(255), userEmail || null);
-      dbRequest.input('displayName', mssql.NVarChar(255), displayName || null);
-      dbRequest.input('photoURL', mssql.NVarChar(512), photoURL || null);
-
       await dbRequest.query(query);
-
       return { status: 200, body: `Usuario ${firebaseUid} guardado.` };
 
     } catch (err) {
@@ -67,15 +95,13 @@ app.http('savetosql', {
   }
 });
 
-// -------------------------------------------------------------
-// --- FUNCIÓN 2: updateuserinfo ---
-// -------------------------------------------------------------
+/* -------------------------------------------------------------
+   FUNCIÓN 2: updateuserinfo
+-------------------------------------------------------------- */
 app.http('updateuserinfo', {
   methods: ['POST'],
   authLevel: 'function',
   handler: async (request, context) => {
-    context.log('Función HTTP (updateuserinfo) procesando una solicitud.');
-
     try {
       const body = await request.json();
       const {
@@ -88,7 +114,7 @@ app.http('updateuserinfo', {
         return { status: 400, body: "El 'firebaseUid' es obligatorio." };
 
       await mssql.connect(baseDbConfig);
-      const dbRequest = new mssql.Request();
+      const db = new mssql.Request();
 
       const query = `
         UPDATE Users
@@ -100,21 +126,21 @@ app.http('updateuserinfo', {
         WHERE FirebaseUid = @firebaseUid
       `;
 
-      dbRequest.input('firebaseUid', mssql.NVarChar(128), firebaseUid);
-      dbRequest.input('peso', mssql.Decimal(5, 2), peso ?? null);
-      dbRequest.input('altura', mssql.Decimal(5, 2), altura ?? null);
-      dbRequest.input('edad', mssql.Int, edad ?? null);
-      dbRequest.input('contactoEmergencia', mssql.NVarChar(255), contactoEmergencia || null);
-      dbRequest.input('direccion', mssql.NVarChar(512), direccion || null);
-      dbRequest.input('contraindicaciones', mssql.NVarChar(mssql.MAX), contraindicaciones || null);
-      dbRequest.input('alergias', mssql.NVarChar(mssql.MAX), alergias || null);
-      dbRequest.input('enfermedadesCronicas', mssql.NVarChar(mssql.MAX), enfermedadesCronicas || null);
-      dbRequest.input('medicacionPermanente', mssql.NVarChar(mssql.MAX), medicacionPermanente || null);
-      dbRequest.input('discapacidades', mssql.NVarChar(mssql.MAX), discapacidades || null);
+      db.input('firebaseUid', mssql.NVarChar(128), firebaseUid);
+      db.input('peso', mssql.Decimal(5, 2), peso ?? null);
+      db.input('altura', mssql.Decimal(5, 2), altura ?? null);
+      db.input('edad', mssql.Int, edad ?? null);
+      db.input('contactoEmergencia', mssql.NVarChar(255), contactoEmergencia || null);
+      db.input('direccion', mssql.NVarChar(512), direccion || null);
+      db.input('contraindicaciones', mssql.NVarChar(mssql.MAX), contraindicaciones || null);
+      db.input('alergias', mssql.NVarChar(mssql.MAX), alergias || null);
+      db.input('enfermedadesCronicas', mssql.NVarChar(mssql.MAX), enfermedadesCronicas || null);
+      db.input('medicacionPermanente', mssql.NVarChar(mssql.MAX), medicacionPermanente || null);
+      db.input('discapacidades', mssql.NVarChar(mssql.MAX), discapacidades || null);
 
-      const result = await dbRequest.query(query);
+      const result = await db.query(query);
 
-      if (result.rowsAffected[0] === 0)
+      if (!result.rowsAffected[0])
         return { status: 404, body: "Usuario no encontrado." };
 
       return { status: 200, body: "Información actualizada." };
@@ -128,20 +154,20 @@ app.http('updateuserinfo', {
   }
 });
 
-// -------------------------------------------------------------
-// --- FUNCIÓN 3: getuserinfo ---
-// -------------------------------------------------------------
+/* -------------------------------------------------------------
+   FUNCIÓN 3: getuserinfo
+-------------------------------------------------------------- */
 app.http('getuserinfo', {
   methods: ['GET'],
   authLevel: 'function',
   handler: async (request, context) => {
-    const firebaseUid = request.query.get('firebaseUid');
-
-    if (!firebaseUid)
-      return { status: 400, jsonBody: { error: "firebaseUid requerido" } };
-
     try {
+      const firebaseUid = request.query.get('firebaseUid');
+      if (!firebaseUid)
+        return { status: 400, jsonBody: { error: "firebaseUid requerido" } };
+
       await mssql.connect(baseDbConfig);
+
       const db = new mssql.Request();
       db.input('firebaseUid', mssql.NVarChar(128), firebaseUid);
 
@@ -163,19 +189,19 @@ app.http('getuserinfo', {
   }
 });
 
-// -------------------------------------------------------------
-// --- FUNCIÓN 4: getdoses ---
-// -------------------------------------------------------------
+/* -------------------------------------------------------------
+   FUNCIÓN 4: getdoses
+-------------------------------------------------------------- */
 app.http('getdoses', {
   methods: ['GET'],
   authLevel: 'function',
   handler: async (request, context) => {
-    const firebaseUid = request.query.get('firebaseUid');
-
-    if (!firebaseUid)
-      return { status: 400, jsonBody: { error: "firebaseUid requerido" } };
-
     try {
+      const firebaseUid = request.query.get('firebaseUid');
+
+      if (!firebaseUid)
+        return { status: 400, jsonBody: { error: "firebaseUid requerido" } };
+
       await mssql.connect(baseDbConfig);
 
       const db = new mssql.Request();
@@ -196,7 +222,6 @@ app.http('getdoses', {
       `;
 
       const result = await db.query(query);
-
       return { status: 200, jsonBody: result.recordset };
 
     } catch (err) {
@@ -208,15 +233,23 @@ app.http('getdoses', {
   }
 });
 
-// -------------------------------------------------------------
-// --- FUNCIÓN 5: getfullevents (Vista Completa) ---
-// -------------------------------------------------------------
+/* -------------------------------------------------------------
+   FUNCIÓN 5: getfullevents (PROTEGIDA CON FIREBASE TOKEN)
+-------------------------------------------------------------- */
 app.http('getfullevents', {
   methods: ['GET', 'POST'],
-  authLevel: 'function',
+  authLevel: 'anonymous', // necesario para AI Studio
   handler: async (request, context) => {
-    context.log("Ejecutando getfullevents...");
+    context.log("Ejecutando getfullevents (segura)...");
 
+    // 1) Validar token
+    const validation = await verifyFirebaseToken(request, context);
+    if (!validation.valid)
+      return { status: 401, jsonBody: { error: validation.error } };
+
+    const uidFromToken = validation.uid;
+
+    // 2) Obtener uid solicitado
     let firebaseUid = null;
 
     if (request.method === 'GET') {
@@ -229,6 +262,11 @@ app.http('getfullevents', {
     if (!firebaseUid)
       return { status: 400, jsonBody: { error: "firebaseUid requerido" } };
 
+    // 3) Bloquear accesos de otro usuario
+    if (firebaseUid !== uidFromToken)
+      return { status: 403, jsonBody: { error: "No tienes permiso para consultar otro usuario." } };
+
+    // 4) Consulta segura
     try {
       await mssql.connect(baseDbConfig);
 
@@ -247,8 +285,8 @@ app.http('getfullevents', {
       return { status: 200, jsonBody: result.recordset };
 
     } catch (err) {
-      context.log('Error', err);
-      return { status: 500, jsonBody: { error: "Error interno al obtener datos" } };
+      context.log("Error", err);
+      return { status: 500, jsonBody: { error: "Error interno" } };
     } finally {
       mssql.close();
     }
