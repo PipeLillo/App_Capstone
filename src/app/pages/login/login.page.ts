@@ -23,9 +23,21 @@ export class LoginPage implements OnInit, OnDestroy {
   constructor(private auth: AuthenticationService, private router: Router) {}
 
   ngOnInit() {
-    this.sub = this.auth.user$.subscribe((user: User | null) => {
+    // Hacemos el callback async para poder usar await
+    this.sub = this.auth.user$.subscribe(async (user: User | null) => {
       if (user) {
-        console.log('Usuario autenticado -> redirigiendo a /home');
+        console.log('Usuario autenticado:', user.uid);
+
+        try {
+          // --- AQUÍ OBTENEMOS EL TOKEN ---
+          const token = await user.getIdToken();
+          console.log('🔥 FIREBASE ID TOKEN:', token);
+          // -------------------------------
+        } catch (error) {
+          console.error('Error obteniendo el token:', error);
+        }
+
+        console.log('Redirigiendo a /home...');
         this.router.navigateByUrl('/home', { replaceUrl: true });
       } else {
         console.log('Usuario no autenticado -> mostrando login.');
@@ -45,16 +57,18 @@ export class LoginPage implements OnInit, OnDestroy {
     try {
       const user = await this.auth.signInWithGoogle();
 
-      // En web (popup) vuelve con user -> navega al tiro
       if (user) {
+        // Opcional: También puedes imprimirlo aquí si el login es directo (popup)
+        const token = await user.getIdToken();
+        console.log('🔥 Token tras login manual:', token);
+        
         this.router.navigateByUrl('/home', { replaceUrl: true });
       }
-      // En redirect (nativo o fallback), el regreso se procesa en initAuth() y navegará solo
     } catch (e: any) {
       this.errorMessage = e?.message || 'No se pudo iniciar sesión.';
       console.error(e);
     } finally {
-      this.loading = false; // nunca se queda pegado
+      this.loading = false;
     }
   }
 }

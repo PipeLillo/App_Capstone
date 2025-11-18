@@ -1,13 +1,58 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>chatbot</ion-title>
-  </ion-toolbar>
+<ion-header class="ion-no-border">
+  <div class="chat-header-bg">
+    <ion-toolbar class="transparent-toolbar">
+      <ion-buttons slot="start">
+        <ion-back-button defaultHref="/home" color="light"></ion-back-button>
+      </ion-buttons>
+      
+      <ion-title>Asistente Virtual</ion-title>
+
+      <ion-buttons slot="end">
+        <div class="mini-brand">
+          <img src="assets/icon/medic_png.png" alt="Logo">
+        </div>
+      </ion-buttons>
+    </ion-toolbar>
+  </div>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">chatbot</ion-title>
-    </ion-toolbar>
-  </ion-header>
+<ion-content [fullscreen]="true" class="chat-content">
+  
+  <div class="chat-container">
+    
+    <div class="date-divider">
+      <span>Hoy</span>
+    </div>
+
+    <div *ngFor="let msg of mensajes" 
+         class="message-wrapper" 
+         [class.user]="msg.enviadoPorMi" 
+         [class.bot]="!msg.enviadoPorMi">
+      
+      <div class="message-bubble">
+        <p>{{ msg.texto }}</p>
+        <span class="msg-time">{{ msg.hora }}</span>
+      </div>
+
+    </div>
+
+  </div>
+
 </ion-content>
+
+<ion-footer class="ion-no-border">
+  <div class="input-area">
+    <div class="input-card">
+      <ion-textarea 
+        placeholder="Escribe un mensaje..." 
+        [(ngModel)]="nuevoMensaje"
+        autoGrow="true"
+        rows="1">
+      </ion-textarea>
+      
+      <ion-button fill="clear" class="send-btn" (click)="enviarMensaje()">
+        <img src="assets/icon/arrow.webp">
+      </ion-button>
+    </div>
+  </div>
+</ion-footer>
