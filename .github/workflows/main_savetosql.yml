@@ -1,20 +1,16 @@
-# Nombre del flujo de trabajo de GitHub Actions
 name: Deploy Node.js Azure Function
 
-# Define cuándo se ejecutará el flujo de trabajo
 on:
   push:
     branches:
       - main
   workflow_dispatch:
 
-# Variables de entorno
 env:
   AZURE_FUNCTIONAPP_NAME: 'savetosql'
   NODE_VERSION: '20.x'
   PACKAGE_DIRECTORY: './azure-functions'
 
-# Permisos necesarios
 permissions:
   id-token: write
   contents: read
@@ -22,31 +18,31 @@ permissions:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    environment: production
 
     steps:
-    - name: 'Checkout GitHub Action'
+    - name: Checkout
       uses: actions/checkout@v4
 
-    - name: 'Login to Azure'
-      uses: azure/login@v1
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-    - name: Setup Node.js version
+    - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: ${{ env.NODE_VERSION }}
 
-    - name: 'npm install and build'
-      run: |
-        npm install
-        npm run build --if-present
+    - name: Install dependencies
+      run: npm install
       working-directory: ${{ env.PACKAGE_DIRECTORY }}
 
-    - name: 'Deploy to Azure Functions'
-      id: deploy-to-function
+    - name: Zip project (including node_modules)
+      run: zip -r functionapp.zip .
+      working-directory: ${{ env.PACKAGE_DIRECTORY }}
+
+    - name: Login to Azure
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Deploy to Azure Functions
       uses: azure/functions-action@v1
       with:
         app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
-        package: ${{ env.PACKAGE_DIRECTORY }}
+        package: ${{ env.PACKAGE_DIRECTORY }}/functionapp.zip
