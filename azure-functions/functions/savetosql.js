@@ -448,82 +448,60 @@ app.http('getfullevents', {
   }
 });
 
-// Archivo: deletedose/index.js (Azure Function - Node.js)
+// ---------------------------------------------------------------------
+// FUNCIÓN 6: deletedose (NUEVA FUNCIÓN)
+// ---------------------------------------------------------------------
+app.http('deletedose', {
+  methods: ['POST'],
+  authLevel: 'function',
+  handler: async (request, context) => {
 
-// Asegúrate de que esta librería (o su equivalente) esté instalada en tu proyecto de Azure Function
-const sql = require('mssql'); 
+    try {
+      // 1. Obtener datos del cuerpo
+      const { recordID, firebaseUid } = await request.json();
 
-module.exports = async function (context, req) {
-    context.log('Procesando solicitud HTTP para eliminar un registro de dosis.');
+      // 2. Validación de Entrada
+      // recordID debe ser un número (bigint en tu BD)
+      if (typeof recordID !== 'number' || !firebaseUid) {
+        return {
+          status: 400,
+          body: "Se requiere un 'recordID' (número) y 'firebaseUid' válidos."
+        };
+      }
 
-    // 1. Obtener datos del cuerpo
-    // recordID debe ser un número (bigint en tu BD)
-    const { recordID, firebaseUid } = req.body; 
+      await mssql.connect(baseDbConfig);
+      const dbRequest = new mssql.Request();
 
-    // 2. Validación de Entrada
-    if (typeof recordID !== 'number' || !firebaseUid) {
-        context.res = {
-            status: 400,
-            body: "Se requiere un 'recordID' (número) y 'firebaseUid' válidos en la solicitud."
-        };
-        return;
-    }
-    
-    // 3. Obtener la cadena de conexión de la configuración de Azure Function
-    const connectionString = process.env.SqlConnectionString;
-    if (!connectionString) {
-        context.res = { status: 500, body: "Error: La cadena de conexión SQL no está configurada." };
-        return;
-    }
+      // 3. Consulta SQL de Eliminación (Segura y Verifica Propiedad)
+      const query = `
+          DELETE DR
+          FROM dbo.DoseRecords AS DR
+          INNER JOIN dbo.UserPlans AS UP ON DR.PlanID = UP.PlanID
+          WHERE DR.RecordID = @recordID AND UP.OwnerFirebaseUID = @firebaseUid;
+      `;
+      
+      // 4. Asignación de parámetros
+      dbRequest.input('recordID', mssql.BigInt, recordID);
+      dbRequest.input('firebaseUid', mssql.NVarChar(128), firebaseUid); 
 
-    try {
-        // 4. Conexión a la Base de Datos
-        await sql.connect(connectionString); 
-        
-        // 5. Consulta SQL de Eliminación (Parametrizada y Segura)
-        
-        // Esta consulta hace un INNER JOIN implícito con UserPlans para verificar la propiedad del registro.
-        const query = `
-            DELETE DR
-            FROM [dbo].[DoseRecords] AS DR
-            INNER JOIN [dbo].[UserPlans] AS UP ON DR.PlanID = UP.PlanID
-            WHERE DR.RecordID = @recordID AND UP.OwnerFirebaseUID = @firebaseUid;
-        `;
-        
-        const request = new sql.Request();
-        
-        // Asignación de tipos de datos de SQL (debe coincidir con la definición de tu tabla)
-        request.input('recordID', sql.BigInt, recordID); // bigint
-        request.input('firebaseUid', sql.VarChar(128), firebaseUid); // varchar(128)
+      const result = await dbRequest.query(query);
 
-        const result = await request.query(query);
+      // 5. Respuesta basada en el resultado
+      if (result.rowsAffected[0] > 0) {
+        return { status: 200, body: `Registro ${recordID} eliminado con éxito.` };
+      } else {
+        // 404 si el ID no existe o no pertenece al usuario
+        return { status: 404, body: `Registro ${recordID} no encontrado o no autorizado.` };
+      }
 
-        // 6. Respuesta basada en el resultado
-        if (result.rowsAffected[0] > 0) {
-             context.log(`Dosis [${recordID}] eliminada por usuario ${firebaseUid}.`);
-             context.res = {
-                 status: 200,
-                 body: { success: true, message: `Registro ${recordID} eliminado.` }
-             };
-        } else {
-             // 404 si el ID no existe o 401 si no pertenece al usuario (no rowsAffected)
-             context.res = {
-                 status: 404,
-                 body: { success: false, message: `Registro ${recordID} no encontrado o no autorizado.` }
-             };
-        }
-
-    } catch (err) {
-        context.log.error('Error durante la ejecución de SQL:', err);
-        context.res = {
-            status: 500,
-            body: { message: "Error interno del servidor al procesar la eliminación." }
-        };
-    } finally {
-        // 7. Cierre de la conexión
-        sql.close();
-    }
-};
+    } catch (err) {
+      context.log('Error en deletedose:', err);
+      return { status: 500, body: "Error interno al eliminar el registro." };
+    } finally {
+      mssql.close();
+    }
+  }
+});
 
 
 
