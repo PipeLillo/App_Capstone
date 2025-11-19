@@ -448,5 +448,71 @@ app.http('getfullevents', {
   }
 });
 
+//   5 Archivo: deletedose/index.js (Azure Function - Node.js)
+
+const sql = require('mssql'); // O la librería que uses para tu BD
+
+module.exports = async function (context, req) {
+    context.log('HTTP trigger function processed a request to delete a dose.');
+
+    // 1. Obtener datos del cuerpo de la solicitud
+    const { recordID, firebaseUid } = req.body;
+
+    // 2. Validación de Entrada
+    if (!recordID || !firebaseUid) {
+        context.res = {
+            status: 400,
+            body: "Por favor, pase recordID y firebaseUid en el cuerpo de la solicitud."
+        };
+        return;
+    }
+
+    try {
+        // 3. Conexión a la Base de Datos
+        // La cadena de conexión debe estar en la configuración de la función de Azure
+        await sql.connect(process.env.SqlConnectionString); 
+        
+        // 4. Ejecutar la Consulta de Eliminación
+        const request = new sql.Request();
+
+        // Consulta SQL parametrizada para prevenir inyecciones SQL
+        // IMPORTANTE: Asegúrate de que tu tabla se llama 'DoseRecords' o cámbialo.
+        const query = `
+            DELETE FROM [DoseRecords] 
+            WHERE RecordID = @recordID AND FirebaseUID = @firebaseUid
+        `;
+
+        request.input('recordID', sql.Int, recordID);
+        request.input('firebaseUid', sql.NVarChar, firebaseUid); // O el tipo de dato que uses para UID
+
+        const result = await request.query(query);
+
+        // 5. Respuesta Exitosa
+        if (result.rowsAffected[0] > 0) {
+             context.log(`Dosis con RecordID: ${recordID} eliminada.`);
+             context.res = {
+                 status: 200,
+                 body: { message: `Registro ${recordID} eliminado con éxito.` }
+             };
+        } else {
+             context.res = {
+                 status: 404,
+                 body: { message: `Registro ${recordID} no encontrado o no autorizado.` }
+             };
+        }
+
+    } catch (err) {
+        context.log.error('Error al conectar o eliminar de SQL:', err);
+        context.res = {
+            status: 500,
+            body: "Error interno del servidor al procesar la eliminación."
+        };
+    } finally {
+        // Asegúrate de cerrar la conexión
+        sql.close();
+    }
+};
+
+
 
 
