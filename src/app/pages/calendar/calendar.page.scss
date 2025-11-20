@@ -232,3 +232,17 @@ ion-modal.auto-height-modal {
     transform: scale(0.95);
   }
 }
+
+
+/* Estilos para el botón flotante */
+ion-fab[slot="fixed"] {
+  ion-fab-button {
+    --box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.14);
+    --margin-bottom: 16px;
+  }
+}
+
+
+
+
+

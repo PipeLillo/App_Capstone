@@ -49,9 +49,11 @@
       </mwl-calendar-month-view>
     </div>
 
+
+
     <div *ngIf="selectedDayEvents.length > 0" class="selected-day-events">
       <ion-list-header class="ion-padding-horizontal">
-        Tomas para el {{ viewDate | date:'d MMMM':'es' }}
+        Tomas para el {{ selectedDateForForm | date:'d MMMM':'es' }}
       </ion-list-header>
       <ion-list lines="none">
         <ion-item *ngFor="let event of selectedDayEvents" class="event-item">
@@ -68,6 +70,14 @@
       </ion-list>
     </div>
   </div>
+
+  <!-- Botón flotante para añadir medicamento -->
+  <!-- Botón flotante para añadir medicamento -->
+<ion-fab vertical="bottom" horizontal="end" slot="fixed" class="ion-padding">
+  <ion-fab-button color="primary" (click)="openAddMedicationForm()">
+    <ion-icon name="add"></ion-icon>
+  </ion-fab-button>
+</ion-fab>
 </ion-content>
 
 <ion-modal [isOpen]="isPickerOpen" (didDismiss)="setPickerOpen(false)">

@@ -101,28 +101,7 @@ export class HomePage implements OnInit, OnDestroy, ViewWillEnter {
     }
   }
 
-  async marcarComoTomado(evento: DoseRecordDto) {
-    const alert = await this.alertCtrl.create({
-      header: 'Confirmar Toma',
-      message: `¿Confirmas que has tomado tu ${evento.medicationName}?`,
-      buttons: [
-        {
-          text: 'Cancelar',
-          role: 'cancel',
-          cssClass: 'secondary'
-        },
-        {
-          text: 'He tomado mi medicamento',
-          handler: () => {
-            console.log('Medicamento tomado:', evento.recordID);
-            // NOTA: Aquí iría la llamada a this.calendarService.updateDoseStatus(...)
-          }
-        }
-      ]
-    });
 
-    await alert.present();
-  }
 
   // ---------------------------------------------------------------------
   // FUNCIÓN NUEVA: ELIMINAR DOSIS
