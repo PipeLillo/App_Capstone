@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core'; // <-- 1. AÑADIDO: ChangeDetectorRef
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import {
@@ -12,7 +12,8 @@ import {
   IonItem,
   IonSpinner,
   AlertController,
-  ViewWillEnter // <-- 2. AÑADIDO: Interfaz para ionViewWillEnter
+  ToastController, // <-- CORREGIDO: Importar ToastController
+  ViewWillEnter // Interfaz para ionViewWillEnter
 } from '@ionic/angular/standalone';
 import { Subscription } from 'rxjs';
 
@@ -38,7 +39,7 @@ import { CalendarDataService, DoseRecordDto } from '../services/calendar-data.se
     IonSpinner,
   ],
 })
-export class HomePage implements OnInit, OnDestroy, ViewWillEnter { // <-- 3. Implementa ViewWillEnter
+export class HomePage implements OnInit, OnDestroy, ViewWillEnter {
   greeting = '¡Hola!';
   private sub?: Subscription;
 
@@ -48,12 +49,13 @@ export class HomePage implements OnInit, OnDestroy, ViewWillEnter { // <-- 3. Im
   constructor(
     private auth: AuthenticationService,
     private calendarService: CalendarDataService,
-    private alertCtrl: AlertController,
-    private cdr: ChangeDetectorRef // <-- 4. INYECTADO: Change Detector Ref
+    private alertCtrl: AlertController, // Inyectado
+    private toastCtrl: ToastController, // <-- CORREGIDO: Inyectar ToastController
+    private cdr: ChangeDetectorRef // Inyectado
   ) {}
 
   ngOnInit(): void {
-    // (Tu lógica de saludo existente...)
+    // Lógica de saludo
     this.sub = this.auth.user$.subscribe(user => {
       const display = user?.displayName?.trim() || '';
       let first = '';
@@ -71,28 +73,27 @@ export class HomePage implements OnInit, OnDestroy, ViewWillEnter { // <-- 3. Im
   }
 
   ionViewWillEnter() {
-    this.loadEventos(); // ✅ La carga de datos se hace en el hook correcto.
+    this.loadEventos(); // Carga de datos
   }
 
   ngOnDestroy(): void {
     this.sub?.unsubscribe();
   }
-  
+
   async loadEventos() {
     this.isLoading = true;
     try {
+      // Usamos el servicio de datos para obtener todos los registros del usuario
       const todosLosEventos = await this.calendarService.getDoses();
       const now = new Date();
 
-      // Lógica de filtrado y ordenación
+      // Lógica de filtrado y ordenación para obtener solo los 3 próximos eventos
       this.proximosEventos = todosLosEventos
         .filter(evento => new Date(evento.scheduledTime) > now)
         .sort((a, b) => new Date(a.scheduledTime).getTime() - new Date(b.scheduledTime).getTime())
         .slice(0, 3);
 
-      // 🚨 FIX: Forzamos a Angular a revisar la variable para que se muestre en la vista
-      this.cdr.detectChanges(); // <-- 5. LLAMADA CLAVE para solucionar el problema de renderizado inicial
-
+      this.cdr.detectChanges(); // Forzar la detección de cambios
     } catch (error) {
       console.error('Error al cargar los eventos', error);
     } finally {
@@ -122,6 +123,75 @@ export class HomePage implements OnInit, OnDestroy, ViewWillEnter { // <-- 3. Im
 
     await alert.present();
   }
+
+  // ---------------------------------------------------------------------
+  // FUNCIÓN NUEVA: ELIMINAR DOSIS
+  // ---------------------------------------------------------------------
+  async eliminarDosis(evento: DoseRecordDto) {
+    // Asumimos que DoseRecordDto contiene el recordID (clave primaria de DoseRecords)
+    const recordID = evento.recordID;
+
+    if (!recordID) {
+      console.error('El evento no tiene un recordID válido para la eliminación.');
+      return;
+    }
+
+    // 1. Mostrar alerta de confirmación antes de llamar a Azure
+    const alert = await this.alertCtrl.create({
+      header: 'Confirmar Eliminación',
+      message: `¿Estás seguro de que deseas eliminar el registro de ${evento.medicationName}? Esta acción no se puede deshacer.`,
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel',
+          cssClass: 'secondary'
+        },
+        {
+          text: 'Eliminar',
+          role: 'destructive',
+          handler: async () => {
+            await this.handleDeleteConfirmation(recordID, evento.medicationName);
+          }
+        }
+      ]
+    });
+
+    await alert.present();
+  }
+
+  private async handleDeleteConfirmation(recordID: number, medicationName: string) {
+    try {
+      this.isLoading = true;
+
+      // Llamada al método implementado en AuthenticationService
+      await this.auth.deleteDoseRecord(recordID);
+
+      // Recargar la lista de eventos para reflejar la eliminación
+      await this.loadEventos();
+
+      // CORREGIDO: Usar ToastController para la notificación de éxito
+      const successToast = await this.toastCtrl.create({
+        message: `El registro de ${medicationName} ha sido eliminado correctamente.`,
+        duration: 2500,
+        position: 'bottom' // Tostada aparece en la parte inferior
+      });
+      await successToast.present();
+
+    } catch (error: any) {
+      console.error('Error al eliminar la dosis:', error);
+      const errorAlert = await this.alertCtrl.create({
+        header: 'Error al Eliminar',
+        // Mensaje más amigable
+        message: error.message || 'No se pudo eliminar la dosis. El registro no existe o no tienes autorización.',
+        buttons: ['OK']
+      });
+      await errorAlert.present();
+    } finally {
+      this.isLoading = false;
+      this.cdr.detectChanges(); // Asegurar que la vista se actualice
+    }
+  }
+  // ---------------------------------------------------------------------
 
   private capFirst(s: string): string {
     const lower = s.toLocaleLowerCase('es');

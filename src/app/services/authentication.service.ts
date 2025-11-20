@@ -35,6 +35,7 @@ export class AuthenticationService {
   private auth: Auth;
   private provider = new GoogleAuthProvider();
 
+  // --- Configuraciones ---
   private firebaseConfig = {
     apiKey: '',
     authDomain: '',
@@ -45,13 +46,19 @@ export class AuthenticationService {
     measurementId: '',
   };
 
-  private azureSaveUrl    = '';
-  private azureUpdateUrl  = '';
-  private azureGetUrl     = '';
+  // --- URLs de Azure Functions ---
+  private azureBaseUrl      = '';
+  
+  private azureSaveUrl      = this.azureBaseUrl + '';
+  private azureUpdateUrl    = this.azureBaseUrl + '';
+  private azureGetUrl       = this.azureBaseUrl + '';
+  private azureDeleteDoseUrl= this.azureBaseUrl + '';
 
-  private azureSaveKey    = '';
-  private azureUpdateKey  = '';
-  private azureGetKey     = '';
+  // --- Keys de Azure Functions ---
+  private azureSaveKey      = '';
+  private azureUpdateKey    = '';
+  private azureGetKey       = '';
+  private azureDeleteDoseKey= '';
 
   private _user$ = new BehaviorSubject<User | null>(null);
   public user$ = this._user$.asObservable();
@@ -142,6 +149,7 @@ export class AuthenticationService {
       'x-functions-key': this.azureSaveKey,
     });
 
+    // Se incluye la clave como parámetro 'code' para compatibilidad
     const url = `${this.azureSaveUrl}?code=${this.azureSaveKey}`;
 
     await firstValueFrom(
@@ -193,6 +201,50 @@ export class AuthenticationService {
     } catch (e: any) {
       if (e?.status === 404) return null;
       throw e;
+    }
+  }
+
+  /**
+   * Llama a la función de Azure para eliminar un registro de dosis específico.
+   * @param recordID El ID del registro de dosis a eliminar (bigint).
+   */
+  async deleteDoseRecord(recordID: number): Promise<void> {
+    const uid = this.currentUser?.uid;
+    if (!uid) {
+      throw new Error('Debes iniciar sesión para eliminar un registro.');
+    }
+
+    // CORRECCIÓN CLAVE: Aseguramos que recordID se envíe como un Number.
+    // Esto resuelve el error 400 'recordID' (número) y 'firebaseUid' válidos.
+    const payload = {
+      firebaseUid: uid,
+      recordID: Number(recordID) // <-- ¡Aseguramos que sea numérico!
+    };
+
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json',
+      'x-functions-key': this.azureDeleteDoseKey,
+    });
+
+    const url = `${this.azureDeleteDoseUrl}?code=${this.azureDeleteDoseKey}`;
+
+    console.log(`[Azure] Solicitando eliminación de dosis: ${recordID} para UID: ${uid}`);
+
+    try {
+      // La función retorna un 200 si es exitosa o 404/400 si falla o no es autorizado
+      await firstValueFrom(
+        this.http.post(url, payload, { headers, responseType: 'text' as 'json' })
+      );
+      console.log(`[Azure] Registro de dosis ${recordID} eliminado con éxito.`);
+    } catch (error: any) {
+      console.error(`Error al eliminar el registro ${recordID}. Esto puede deberse a que no fue encontrado (404) o el usuario no es el propietario.`, error);
+      
+      // Propagar un error con un mensaje más detallado si es un 400
+      if (error.status === 400 && error.error) {
+        throw new Error(error.error); // Usar el mensaje específico del backend (e.g., "Se requiere...")
+      }
+
+      throw new Error('Fallo al eliminar el registro de dosis. Por favor, intente de nuevo o contacte a soporte.');
     }
   }
 

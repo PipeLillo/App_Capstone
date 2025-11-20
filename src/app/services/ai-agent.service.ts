@@ -32,11 +32,11 @@ export class GeminiAgentService {
 
     // 🛑 CLAVE DE API DE GEMINI (Placeholder, usa tu clave real si es diferente)
     private apiKey = ""; 
-    
+
     // 🛑 ENDPOINT REAL DE TU FUNCIÓN EXTERNA DE AZURE
     private getEventsFunctionUrl = '';
-    
-    private modelName = 'gemini-2.5-flash';
+
+    private modelName = '';
 
     constructor(
         private http: HttpClient,

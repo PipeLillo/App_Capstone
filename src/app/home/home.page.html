@@ -23,21 +23,29 @@
           <div class="text-content">
             <br>
             <h3 class="card-title">{{ evento.medicationName }}</h3>
-            
+
             <p class="badge date">
               {{ evento.scheduledTime | date:'MMMM d, HH:mm' }}
             </p>
-            
+
           </div>
-          
+
         </div>
       </ion-item>
-      
+
       <div class="card-actions">
         <ion-button size="small" fill="outline" routerLink="/calendar">
           Ver calendario
         </ion-button>
-        
+
+        <!-- Botón de Eliminación: Llama a la nueva función -->
+        <ion-button 
+            size="small" 
+            fill="solid" 
+            color="danger"
+            (click)="eliminarDosis(evento)">
+          Eliminar
+        </ion-button>
 
         <ion-button 
             size="small" 
@@ -70,9 +78,6 @@
 </ion-content>
 
 <ion-tab-bar slot="bottom">
-
-
-
   <ion-tab-button tab="anuncios">
     <ion-icon name="megaphone-outline"></ion-icon>
     <ion-label>Consejos</ion-label>
@@ -82,5 +87,4 @@
     <ion-icon name="chatbubbles-outline"></ion-icon>
     <ion-label>Mensajes</ion-label>
   </ion-tab-button>
-
 </ion-tab-bar>
