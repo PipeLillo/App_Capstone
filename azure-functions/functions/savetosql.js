@@ -2,7 +2,7 @@ const { app } = require('@azure/functions');
 const mssql = require('mssql');
 
 // ---------------------------------------------------------------------
-// 🚀 OPTIMIZACIÓN 1: POOL DE CONEXIONES GLOBAL (Mantiene conexiones abiertas)
+// CONFIG DB
 // ---------------------------------------------------------------------
 const baseDbConfig = {
     user: process.env.DB_USER,
@@ -11,46 +11,13 @@ const baseDbConfig = {
     database: process.env.DB_DATABASE,
     options: {
         encrypt: true,
-        enableArithAbort: true,
-        // Opcional: Aumentar el tamaño del pool si esperas muchas peticiones concurrentes
-        // max: 10, 
+        enableArithAbort: true
     }
 };
 
-let sqlPool = null;
-
-/**
- * Retorna el pool de conexiones SQL, creándolo si es la primera vez que se llama.
- * Usa un patrón Singleton para asegurar que solo haya un pool activo.
- */
-async function getSqlPool() {
-    if (sqlPool) {
-        return sqlPool;
-    }
-    
-    try {
-        sqlPool = new mssql.ConnectionPool(baseDbConfig);
-        
-        // Manejo de errores del pool (recomendado)
-        sqlPool.on('error', err => {
-            console.error('SQL Pool Error:', err);
-        });
-        
-        await sqlPool.connect();
-        console.log('SQL Connection Pool initialized successfully.');
-        return sqlPool;
-    } catch (err) {
-        console.error('Error initializing SQL Pool:', err);
-        throw new Error("Failed to connect to the database.");
-    }
-}
-
 // ---------------------------------------------------------------------
-// FUNCION GLOBAL: VALIDAR TOKEN FIREBASE SIN firebase-admin (NO OPTIMIZADA POR FALTA DE CLAVES)
+// FUNCION GLOBAL: VALIDAR TOKEN FIREBASE SIN firebase-admin
 // ---------------------------------------------------------------------
-// NOTA: Esta función sigue siendo lenta porque realiza una petición HTTP externa
-// por cada llamada, lo que aumenta los GB-segundos.
-// Se recomienda reemplazar por la validación local usando 'firebase-admin' si es posible.
 async function verifyFirebaseToken(request, context) {
     const auth = request.headers.get("authorization");
 
@@ -61,6 +28,7 @@ async function verifyFirebaseToken(request, context) {
     const idToken = auth.replace("Bearer ", "").trim();
 
     try {
+        // Esta API de Google Identity Toolkit verifica el token y devuelve la información del usuario
         const response = await fetch(
             `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${process.env.FIREBASE_API_KEY}`,
             {
@@ -76,7 +44,9 @@ async function verifyFirebaseToken(request, context) {
             return { valid: false, error: "Token inválido" };
         }
 
+        // uid real proveniente del token
         const uid = data.users[0].localId;
+
         return { valid: true, uid };
 
     } catch (err) {
@@ -92,7 +62,8 @@ app.http('savetosql', {
     methods: ['POST'],
     authLevel: 'function',
     handler: async (request, context) => {
-        const pool = await getSqlPool(); // <-- USANDO EL POOL
+        // ⚠️ RECOMENDACIÓN DE SEGURIDAD: 
+        // ⚠️ Agregar aquí la validación de token (verifyFirebaseToken) para asegurar la identidad.
         
         try {
             const { firebaseUid, userEmail, displayName, photoURL } = await request.json();
@@ -100,7 +71,9 @@ app.http('savetosql', {
             if (!firebaseUid)
                 return { status: 400, body: "Por favor, pase un UID válido." };
 
-            const dbRequest = pool.request();
+            await mssql.connect(baseDbConfig);
+
+            const dbRequest = new mssql.Request();
             dbRequest.input('firebaseUid', mssql.NVarChar(128), firebaseUid);
 
             const query = `
@@ -126,8 +99,9 @@ app.http('savetosql', {
         } catch (err) {
             context.log('Error', err);
             return { status: 500, body: "Error al guardar usuario." };
-        } 
-        // 💡 Importante: Ya no se llama a mssql.close(). El pool gestiona las conexiones.
+        } finally {
+            mssql.close();
+        }
     }
 });
 
@@ -138,7 +112,8 @@ app.http('updateuserinfo', {
     methods: ['POST'],
     authLevel: 'function',
     handler: async (request, context) => {
-        const pool = await getSqlPool(); // <-- USANDO EL POOL
+        // ⚠️ RECOMENDACIÓN DE SEGURIDAD: 
+        // ⚠️ Agregar aquí la validación de token (verifyFirebaseToken) para asegurar la identidad.
         
         try {
             const body = await request.json();
@@ -151,7 +126,8 @@ app.http('updateuserinfo', {
             if (!firebaseUid)
                 return { status: 400, body: "firebaseUid requerido" };
 
-            const dbRequest = pool.request();
+            await mssql.connect(baseDbConfig);
+            const dbRequest = new mssql.Request();
 
             const query = `
                 UPDATE Users
@@ -185,6 +161,8 @@ app.http('updateuserinfo', {
         } catch (err) {
             context.log("Error", err);
             return { status: 500, body: "Error al actualizar usuario" };
+        } finally {
+            mssql.close();
         }
     }
 });
@@ -196,14 +174,16 @@ app.http('getuserinfo', {
     methods: ['GET'],
     authLevel: 'function',
     handler: async (request, context) => {
-        const pool = await getSqlPool(); // <-- USANDO EL POOL
-
+        // ⚠️ RECOMENDACIÓN DE SEGURIDAD: 
+        // ⚠️ Agregar aquí la validación de token (verifyFirebaseToken) para asegurar la identidad.
+        
         const firebaseUid = request.query.get('firebaseUid');
         if (!firebaseUid)
             return { status: 400, jsonBody: { error: "firebaseUid requerido" } };
 
         try {
-            const db = pool.request();
+            await mssql.connect(baseDbConfig);
+            const db = new mssql.Request();
             db.input('firebaseUid', mssql.NVarChar(128), firebaseUid);
 
             const result = await db.query(`
@@ -218,6 +198,8 @@ app.http('getuserinfo', {
         } catch (err) {
             context.log("Error", err);
             return { status: 500, jsonBody: { error: "Error interno" } };
+        } finally {
+            mssql.close();
         }
     }
 });
@@ -229,14 +211,17 @@ app.http('getdoses', {
     methods: ['GET'],
     authLevel: 'function',
     handler: async (request, context) => {
-        const pool = await getSqlPool(); // <-- USANDO EL POOL
-
+        // ⚠️ RECOMENDACIÓN DE SEGURIDAD: 
+        // ⚠️ Agregar aquí la validación de token (verifyFirebaseToken) para asegurar la identidad.
+        
         const firebaseUid = request.query.get('firebaseUid');
         if (!firebaseUid)
             return { status: 400, jsonBody: { error: "firebaseUid requerido" } };
 
         try {
-            const db = pool.request();
+            await mssql.connect(baseDbConfig);
+
+            const db = new mssql.Request();
             db.input('firebaseUid', mssql.NVarChar(128), firebaseUid);
 
             const result = await db.query(`
@@ -258,6 +243,8 @@ app.http('getdoses', {
         } catch (err) {
             context.log("Error", err);
             return { status: 500, jsonBody: { error: "Error interno" } };
+        } finally {
+            mssql.close();
         }
     }
 });
@@ -270,12 +257,12 @@ app.http('savetreatment', {
     authLevel: 'function',
     handler: async (request, context) => {
         context.log('Función HTTP (savetreatment) procesando solicitud.');
-        const pool = await getSqlPool(); // <-- USANDO EL POOL
         
-        // 💡 La conexión debe ser desde el pool para iniciar la transacción
-        const transaction = new mssql.Transaction(pool);
-        
+        // ⚠️ RECOMENDACIÓN DE SEGURIDAD: 
+        // ⚠️ Agregar aquí la validación de token (verifyFirebaseToken) para asegurar la identidad.
+
         try {
+            // 1. Recibir datos del Frontend
             const body = await request.json();
             const { 
                 firebaseUid, 
@@ -284,14 +271,19 @@ app.http('savetreatment', {
                 userDose, 
                 frequencyValue, 
                 startDate, 
-                endDate, // <--- Fecha de término
+                endDate, 
                 notes 
             } = body;
 
+            // Validaciones
             if (!firebaseUid || !medicationName || !frequencyValue || !startDate || !endDate) {
                 return { status: 400, body: "Faltan datos obligatorios para crear el tratamiento." };
             }
 
+            await mssql.connect(baseDbConfig);
+            
+            // 2. INICIAR TRANSACCIÓN (Todo o Nada)
+            const transaction = new mssql.Transaction();
             await transaction.begin();
 
             try {
@@ -308,7 +300,7 @@ app.http('savetreatment', {
                     USING (SELECT @uid AS OwnerFirebaseUID, @name AS Name) AS source
                     ON (target.OwnerFirebaseUID = source.OwnerFirebaseUID AND target.Name = source.Name)
                     WHEN MATCHED THEN
-                        UPDATE SET Color = @color
+                        UPDATE SET Color = @color 
                     WHEN NOT MATCHED THEN
                         INSERT (OwnerFirebaseUID, Name, Color, DefaultDose, DoseUnit, FormType)
                         VALUES (@uid, @name, @color, 0, 'mg', 'N/A');
@@ -329,7 +321,7 @@ app.http('savetreatment', {
                 requestPlan.input('freqType', mssql.NVarChar(50), 'Horas');
                 requestPlan.input('freqVal', mssql.NVarChar(255), frequencyValue.toString());
                 requestPlan.input('start', mssql.Date, new Date(startDate));
-                requestPlan.input('end', mssql.Date, new Date(endDate));
+                requestPlan.input('end', mssql.Date, new Date(endDate)); 
 
                 const queryPlan = `
                     INSERT INTO dbo.UserPlans 
@@ -344,57 +336,52 @@ app.http('savetreatment', {
                 const planID = resultPlan.recordset[0].PlanID;
 
                 // =================================================================================
-                // 🚀 OPTIMIZACIÓN 2: Generación de Datos en Memoria para Bulk Insert
+                // PASO C: Generación Masiva de Eventos (OPTIMIZADO con BULK INSERT)
                 // =================================================================================
                 
                 let currentDate = new Date(startDate);
                 const limitDate = new Date(endDate);
-                limitDate.setHours(23, 59, 59, 999);
+                limitDate.setHours(23, 59, 59, 999); // Ajuste al final del día
 
                 const hoursToAdd = parseInt(frequencyValue);
-                
                 if (isNaN(hoursToAdd) || hoursToAdd <= 0) {
                     throw new Error("La frecuencia debe ser un número positivo.");
                 }
 
-                context.log(`Generando eventos para Bulk Insert: ${currentDate} hasta ${limitDate} cada ${hoursToAdd} horas.`);
+                context.log(`Generando ${Math.floor((limitDate.getTime() - currentDate.getTime()) / (hoursToAdd * 60 * 60 * 1000))} eventos para inserción masiva...`);
 
-                const dosesToInsert = []; // <-- Array para almacenar los registros
-                
-                // --- BUCLE: Recopila datos sin hacer peticiones a SQL ---
+                const valuesToInsert = [];
+
+                // --- BUCLE: Generar los valores de inserción ---
                 while (currentDate <= limitDate) {
-                    dosesToInsert.push({
-                        PlanID: planID,
-                        ScheduledTime: new Date(currentDate),
-                        Status: 2, // Pendiente
-                        Notes: notes || null
-                    });
+                    // Formato ISO para MSSQL (ej: 2025-01-01 10:00:00.000)
+                    const scheduledTime = currentDate.toISOString().replace('T', ' ').substring(0, 23);
                     
-                    // Sumamos las horas
+                    // Escapar comillas simples en las notas (seguridad de string literal)
+                    const notesValue = notes ? `'${notes.replace(/'/g, "''")}'` : 'NULL'; 
+                    
+                    // Acumulamos la fila de datos: (PlanID, ScheduledTime, Status, Notes)
+                    valuesToInsert.push(`(${planID}, '${scheduledTime}', 2, ${notesValue})`);
+
+                    // CALCULAMOS LA SIGUIENTE TOMA
                     currentDate = new Date(currentDate.getTime() + (hoursToAdd * 60 * 60 * 1000));
                 }
-                
-                // =================================================================================
-                // PASO D: Inserción Masiva (BULK INSERT - Una sola petición de red)
-                // =================================================================================
-                if (dosesToInsert.length > 0) {
-                    const table = new mssql.Table('DoseRecords');
+
+                if (valuesToInsert.length > 0) {
+                    // EJECUCIÓN DEL BULK INSERT con una sola llamada
+                    const finalBulkQuery = `
+                        INSERT INTO dbo.DoseRecords (PlanID, ScheduledTime, Status, Notes)
+                        VALUES 
+                        ${valuesToInsert.join(',\n')};
+                    `;
                     
-                    // Definición de las columnas (debe coincidir con la tabla DoseRecords)
-                    table.columns.add('PlanID', mssql.Int, { nullable: false });
-                    table.columns.add('ScheduledTime', mssql.DateTime, { nullable: false });
-                    table.columns.add('Status', mssql.Int, { nullable: false });
-                    table.columns.add('Notes', mssql.NVarChar(500), { nullable: true });
-
-                    dosesToInsert.forEach(d => {
-                        table.rows.add(d.PlanID, d.ScheduledTime, d.Status, d.Notes);
-                    });
-
-                    const bulk = new mssql.Request(transaction);
-                    await bulk.bulk(table); // Ejecución de la inserción masiva: UNA sola operación.
-                    context.log(`Bulk Insert ejecutado para ${dosesToInsert.length} registros.`);
+                    const requestBulk = new mssql.Request(transaction);
+                    await requestBulk.query(finalBulkQuery);
+                    
+                    context.log(`Inserción masiva de ${valuesToInsert.length} registros completada.`);
                 }
-                
+
+
                 // =================================================================================
                 // 3. CONFIRMAR TRANSACCIÓN (COMMIT)
                 // =================================================================================
@@ -404,7 +391,8 @@ app.http('savetreatment', {
                 return { status: 200, body: JSON.stringify({ message: "Tratamiento generado correctamente", planId: planID }) };
 
             } catch (err) {
-                await transaction.rollback(); // Deshace todo si falla
+                // Si falla algo, deshacemos TODO.
+                await transaction.rollback();
                 context.log('Error', 'Rollback ejecutado debido a un error interno:', err);
                 throw err;  
             }
@@ -412,19 +400,23 @@ app.http('savetreatment', {
         } catch (err) {
             context.log('Error', 'Error fatal en savetreatment:', err);
             return { status: 500, body: "Error interno al guardar el tratamiento." };
+        } finally {
+            mssql.close();
         }
     }
 });
+
 // ---------------------------------------------------------------------
 // FUNCIÓN 5: getfullevents (VALIDADA CON TOKEN DE FIREBASE)
 // ---------------------------------------------------------------------
 app.http('getfullevents', {
     methods: ['GET', 'POST'],
-    authLevel: 'anonymous',
+    authLevel: 'anonymous', // Se usa 'anonymous' porque la función maneja la autenticación
     handler: async (request, context) => {
+
         context.log("Ejecutando getfullevents...");
 
-        // 1. Validación del token (NO OPTIMIZADO)
+        // 1. Validación del token (Autenticación)
         const validation = await verifyFirebaseToken(request, context);
         if (!validation.valid) {
             return { status: 401, jsonBody: { error: validation.error } };
@@ -432,10 +424,13 @@ app.http('getfullevents', {
 
         const uidFromToken = validation.uid;
 
+        // 2. Obtener UID desde query o body
         let firebaseUid = null;
+
         if (request.method === 'GET') {
             firebaseUid = request.query.get('firebaseUid');
         } else {
+            // Manejar error si el body no es JSON
             const body = await request.json().catch(() => null);
             firebaseUid = body?.firebaseUid;
         }
@@ -443,6 +438,7 @@ app.http('getfullevents', {
         if (!firebaseUid)
             return { status: 400, jsonBody: { error: "firebaseUid requerido" } };
 
+        // 3. Comparar UID del token con UID solicitado (Autorización)
         if (firebaseUid !== uidFromToken) {
             return {
                 status: 403,
@@ -451,9 +447,10 @@ app.http('getfullevents', {
         }
 
         // 4. Ejecución normal
-        const pool = await getSqlPool(); // <-- USANDO EL POOL
         try {
-            const db = pool.request();
+            await mssql.connect(baseDbConfig);
+
+            const db = new mssql.Request();
             db.input('firebaseUid', mssql.NVarChar(128), firebaseUid);
 
             const result = await db.query(`
@@ -468,6 +465,8 @@ app.http('getfullevents', {
         } catch (err) {
             context.log("Error", err);
             return { status: 500, jsonBody: { error: "Error interno al obtener datos" } };
+        } finally {
+            mssql.close();
         }
     }
 });
@@ -479,11 +478,14 @@ app.http('deletedose', {
     methods: ['POST'],
     authLevel: 'function',
     handler: async (request, context) => {
-        const pool = await getSqlPool(); // <-- USANDO EL POOL
-
+        // ⚠️ RECOMENDACIÓN DE SEGURIDAD: 
+        // ⚠️ Agregar aquí la validación de token (verifyFirebaseToken) para asegurar la identidad.
+        
         try {
+            // 1. Obtener datos del cuerpo
             const { recordID, firebaseUid } = await request.json();
 
+            // 2. Validación de Entrada
             if (typeof recordID !== 'number' || !firebaseUid) {
                 return {
                     status: 400,
@@ -491,8 +493,10 @@ app.http('deletedose', {
                 };
             }
 
-            const dbRequest = pool.request();
+            await mssql.connect(baseDbConfig);
+            const dbRequest = new mssql.Request();
 
+            // 3. Consulta SQL de Eliminación (Segura y Verifica Propiedad)
             const query = `
                 DELETE DR
                 FROM dbo.DoseRecords AS DR
@@ -500,11 +504,13 @@ app.http('deletedose', {
                 WHERE DR.RecordID = @recordID AND UP.OwnerFirebaseUID = @firebaseUid;
             `;
             
+            // 4. Asignación de parámetros
             dbRequest.input('recordID', mssql.BigInt, recordID);
-            dbRequest.input('firebaseUid', mssql.NVarChar(128), firebaseUid);  
+            dbRequest.input('firebaseUid', mssql.NVarChar(128), firebaseUid); 
 
             const result = await dbRequest.query(query);
 
+            // 5. Respuesta basada en el resultado
             if (result.rowsAffected[0] > 0) {
                 return { status: 200, body: `Registro ${recordID} eliminado con éxito.` };
             } else {
@@ -514,6 +520,8 @@ app.http('deletedose', {
         } catch (err) {
             context.log('Error en deletedose:', err);
             return { status: 500, body: "Error interno al eliminar el registro." };
+        } finally {
+            mssql.close();
         }
     }
 });
