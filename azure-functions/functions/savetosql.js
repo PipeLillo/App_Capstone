@@ -309,12 +309,12 @@ app.http('savetreatment', {
         requestPlan.input('freqType', mssql.NVarChar(50), 'Horas'); // Asumimos horas por el input numérico
         requestPlan.input('freqVal', mssql.NVarChar(255), frequencyValue.toString());
 
-        // --- CORRECCIÓN IMPORTANTE: usar DateTime para conservar la hora ---
+        // --- CORRECCIÓN IMPORTANTE: usar DateTime2 para conservar la hora ---
         const startDateObj = new Date(startDate);
         const endDateObj = new Date(endDate);
 
-        requestPlan.input('start', mssql.DateTime, startDateObj);
-        requestPlan.input('end', mssql.DateTime, endDateObj);
+        requestPlan.input('start', mssql.DateTime2, startDateObj);
+        requestPlan.input('end', mssql.DateTime2, endDateObj);
 
         const queryPlan = `
           INSERT INTO dbo.UserPlans 
@@ -353,7 +353,7 @@ app.http('savetreatment', {
           
           const requestDose = new mssql.Request(transaction);
           requestDose.input('planId', mssql.Int, planID);
-          requestDose.input('schedTime', mssql.DateTime, new Date(currentDate)); // usar DateTime para conservar hora
+          requestDose.input('schedTime', mssql.DateTime2, new Date(currentDate)); // usar DateTime2 para conservar hora
           requestDose.input('notes', mssql.NVarChar(500), notes || null);
 
           // Insertamos la dosis individual
