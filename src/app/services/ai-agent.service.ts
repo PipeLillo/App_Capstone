@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { AuthenticationService } from './authentication.service';
+import { environment } from '../../environments/environment';
 
 // Tipos para simplificar la interacción con la API de Gemini
 interface GeminiPart {
@@ -26,17 +27,12 @@ interface GeminiResponse {
   functionCalls?: { name: string, args: any }[];
 }
 
-
 @Injectable({ providedIn: 'root' })
 export class GeminiAgentService {
 
-    // 🛑 CLAVE DE API DE GEMINI (Placeholder, usa tu clave real si es diferente)
-    private apiKey = ""; 
-
-    // 🛑 ENDPOINT REAL DE TU FUNCIÓN EXTERNA DE AZURE
-    private getEventsFunctionUrl = '';
-
-    private modelName = '';
+    private apiKey = environment.GEMINI_API_KEY; 
+    private getEventsFunctionUrl = environment.AZURE_GET_EVENTS_URL;
+    private modelName = environment.GEMINI_MODEL_NAME;
 
     constructor(
         private http: HttpClient,
@@ -120,16 +116,71 @@ export class GeminiAgentService {
                     
                     const firebaseUidToQuery = call.args['firebaseUid'] || uid; 
                     
-                    // 4. Ejecutar la función externa real
-                    const functionResult = await this.callAzureFunction_getfullevents(firebaseUidToQuery);
-                    
-                    // 5. Añadir el resultado de la función al historial
+                    let functionResult = await this.callAzureFunction_getfullevents(firebaseUidToQuery);
+                
+                    try {
+                        if (Array.isArray(functionResult)) {
+                            functionResult = functionResult.map((ev: any) => {
+                                const fixed: any = { ...ev };
+
+                                // Ajuste para ScheduledTime
+                                if (fixed.ScheduledTime) {
+                                    // Intentamos parsear correctamente cualquier formato ISO
+                                    const parsed = new Date(fixed.ScheduledTime);
+                                    if (!isNaN(parsed.getTime())) {
+                                        parsed.setHours(parsed.getHours() - 3); // resta 3 horas
+                                        fixed.ScheduledTime = parsed.toISOString();
+                                    }
+                                }
+
+                                // Ajuste para TakenTime (si existe)
+                                if (fixed.TakenTime) {
+                                    const parsedT = new Date(fixed.TakenTime);
+                                    if (!isNaN(parsedT.getTime())) {
+                                        parsedT.setHours(parsedT.getHours() - 3);
+                                        fixed.TakenTime = parsedT.toISOString();
+                                    }
+                                }
+
+                                return fixed;
+                            });
+                            console.log('[DBG] functionResult ajustado restando 3 horas a los timestamps.');
+                        } else {
+                            if (functionResult && typeof functionResult === 'object' && Array.isArray(functionResult.result)) {
+                                const arr = functionResult.result;
+                                functionResult = { ...functionResult, result: arr.map((ev: any) => {
+                                    const fixed: any = { ...ev };
+                                    if (fixed.ScheduledTime) {
+                                        const parsed = new Date(fixed.ScheduledTime);
+                                        if (!isNaN(parsed.getTime())) {
+                                            parsed.setHours(parsed.getHours() - 3);
+                                            fixed.ScheduledTime = parsed.toISOString();
+                                        }
+                                    }
+                                    if (fixed.TakenTime) {
+                                        const parsedT = new Date(fixed.TakenTime);
+                                        if (!isNaN(parsedT.getTime())) {
+                                            parsedT.setHours(parsedT.getHours() - 3);
+                                            fixed.TakenTime = parsedT.toISOString();
+                                        }
+                                    }
+                                    return fixed;
+                                })};
+                                console.log('[DBG] functionResult.result ajustado restando 3 horas a los timestamps.');
+                            }
+                        }
+                    } catch (err) {
+                        console.error("Error ajustando horas en frontend:", err);
+                        // No hacemos throw: si falla el ajuste, enviamos lo que haya.
+                    }
+
+                    // 5. Añadir el (posiblemente) resultado ajustado de la función al historial
                     const functionResponsePart: GeminiContent = {
                         role: 'function', 
                         parts: [{ 
                             functionResponse: {
                                 name: 'getfullevents',
-                                // Corrección clave: Envolvemos el resultado en un objeto con la clave 'result'.
+                                // Envolvemos el resultado (ajustado) en un objeto con la clave 'result'.
                                 response: {
                                     result: functionResult 
                                 }
@@ -171,7 +222,7 @@ export class GeminiAgentService {
         });
 
         const systemInstructionText = `
-Eres 'MyZemot', un asistente avanzado de planificación de salud y medicamentos, desarrollado por Google Gemini.
+Eres 'MyZenit', un asistente avanzado de planificación de salud y medicamentos, desarrollado por Google Gemini.
 Tu rol es proporcionar información proactiva y contextual sobre la agenda médica y las dosis del usuario.
 
 **Directrices Clave:**

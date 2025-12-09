@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { AuthenticationService } from './authentication.service';
+import { environment } from '../../environments/environment';
 
 export interface DoseRecordDto {
   recordID: number;
@@ -16,13 +17,14 @@ export interface DoseRecordDto {
 })
 export class CalendarDataService {
 
-  private apiUrl = '';
+  private apiUrl = environment.CALENDAR_API_URL;
 
-  // 🔑 CLAVE 1: Para LEER datos (getdoses) - La que ya tenías
-  private apiKeyGet = '';
+  // 🔑 Clave para obtener dosis (getdoses)
+  private apiKeyGet = environment.CALENDAR_API_KEY_GET;
 
-  // 🔑 CLAVE 2: Para GUARDAR datos (savetreatment) - La nueva
-  private apiKeySave = '';
+  // 🔑 Clave para guardar tratamiento (savetreatment)
+  private apiKeySave = environment.CALENDAR_API_KEY_SAVE;
+
 
   
   constructor(
