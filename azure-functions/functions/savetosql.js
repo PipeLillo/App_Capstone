@@ -206,8 +206,7 @@ app.http('getdoses', {
   handler: async (request, context) => {
 
     const firebaseUid = request.query.get('firebaseUid');
-    if (!firebaseUid)
-      return { status: 400, jsonBody: { error: "firebaseUid requerido" } };
+    if (!firebaseUid) return { status: 400, jsonBody: { error: "firebaseUid requerido" } };
 
     try {
       await mssql.connect(baseDbConfig);
@@ -215,12 +214,13 @@ app.http('getdoses', {
       const db = new mssql.Request();
       db.input('firebaseUid', mssql.NVarChar(128), firebaseUid);
 
+      // IMPORTANTE: convertimos ScheduledTime a string ISO con offset (style 127)
       const result = await db.query(`
         SELECT
           dr.RecordID AS recordID,
           m.Name AS medicationName,
           m.Color AS medicationColor,
-          dr.ScheduledTime AS scheduledTime,
+          CONVERT(varchar(33), dr.ScheduledTime, 127) AS scheduledTime,
           dr.Status AS status
         FROM dbo.DoseRecords dr
         JOIN dbo.UserPlans up ON dr.PlanID = up.PlanID
@@ -264,7 +264,7 @@ app.http('savetreatment', {
         startDate, 
         endDate, // Fecha de término en ISO (UTC)
         startDateWallClock, // "YYYY-MM-DDTHH:mm:ss" (sin Z) - opcional
-        timezoneOffsetMinutes, // offset cliente en minutos (ej. -180 para UTC-3) - opcional
+        timezoneOffsetMinutes, // offset cliente en minutos (ej. 180 para UTC-3) - opcional
         notes 
       } = body;
 
@@ -424,14 +424,14 @@ app.http('savetreatment', {
 
           const requestDose = new mssql.Request(transaction);
           requestDose.input('planId', mssql.Int, planID);
-          // Pasamos el string ISO con offset; driver interpreta correctamente para DateTimeOffset
-          requestDose.input('schedTime', mssql.DateTimeOffset, dtOffsetStr);
+          // Pasamos la cadena (NVARCHAR) y en la consulta hacemos CAST(... AS datetimeoffset(3))
+          requestDose.input('schedTimeStr', mssql.NVarChar(50), dtOffsetStr);
           requestDose.input('notes', mssql.NVarChar(500), notes || null);
 
-          // Insertamos la dosis individual
+          // Insertamos la dosis individual usando CAST para asegurarnos que SQL interprete el offset correctamente
           await requestDose.query(`
             INSERT INTO dbo.DoseRecords (PlanID, ScheduledTime, Status, Notes)
-            VALUES (@planId, @schedTime, 2, @notes); -- Status 2 = Pendiente
+            VALUES (@planId, CAST(@schedTimeStr AS datetimeoffset(3)), 2, @notes); -- Status 2 = Pendiente
           `);
 
           // Avanzar ambas representaciones: UTC (para límite) y wall-clock (para la hora local mostrada)
@@ -508,8 +508,25 @@ app.http('getfullevents', {
       const db = new mssql.Request();
       db.input('firebaseUid', mssql.NVarChar(128), firebaseUid);
 
+      // Selección explícita desde la vista, convertimos los DATETIMEOFFSET a ISO con offset (127)
       const result = await db.query(`
-        SELECT *
+        SELECT
+          FirebaseUid,
+          DisplayName,
+          Email,
+          Edad,
+          Peso,
+          Altura,
+          EnfermedadesCronicas,
+          Alergias,
+          Contraindicaciones,
+          CONVERT(varchar(33), ScheduledTime, 127) AS ScheduledTime,
+          CASE WHEN TakenTime IS NOT NULL THEN CONVERT(varchar(33), TakenTime, 127) ELSE NULL END AS TakenTime,
+          DoseStatus,
+          DoseNotes,
+          PlannedDose,
+          MedicationName,
+          DoseUnit
         FROM vw_UserEventsFull
         WHERE FirebaseUid = @firebaseUid
         ORDER BY ScheduledTime ASC;
