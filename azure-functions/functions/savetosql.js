@@ -240,7 +240,7 @@ app.http('getdoses', {
   }
 });
 // -------------------------------------------------------------
-// --- FUNCIÓN: savetreatment (Definitiva, CORREGIDA) ---
+// --- FUNCIÓN: savetreatment (COMPLETA y CORREGIDA) ---
 // -------------------------------------------------------------
 app.http('savetreatment', {
   methods: ['POST'],
@@ -249,8 +249,12 @@ app.http('savetreatment', {
     context.log('Función HTTP (savetreatment) procesando solicitud.');
 
     try {
-      // 1. Recibir datos del Frontend (incluyendo endDate)
+      // 1. Recibir datos del Frontend (incluyendo endDate, startDateWallClock, timezoneOffsetMinutes)
       const body = await request.json();
+
+      // Log del payload recibido (útil para debug)
+      context.log('[DBG] Payload recibido (body):', JSON.stringify(body));
+
       const { 
         firebaseUid, 
         medicationName, 
@@ -258,7 +262,9 @@ app.http('savetreatment', {
         userDose, 
         frequencyValue, 
         startDate, 
-        endDate, // <--- Fecha de término
+        endDate, // Fecha de término en ISO (UTC)
+        startDateWallClock, // "YYYY-MM-DDTHH:mm:ss" (sin Z) - opcional
+        timezoneOffsetMinutes, // offset cliente en minutos (ej. -180 para UTC-3) - opcional
         notes 
       } = body;
 
@@ -309,9 +315,12 @@ app.http('savetreatment', {
         requestPlan.input('freqType', mssql.NVarChar(50), 'Horas'); // Asumimos horas por el input numérico
         requestPlan.input('freqVal', mssql.NVarChar(255), frequencyValue.toString());
 
-        // --- CORRECCIÓN IMPORTANTE: usar DateTime2 para conservar la hora ---
+        // --- Mantener Start/End como DateTime2 (recomendado para planes) ---
         const startDateObj = new Date(startDate);
         const endDateObj = new Date(endDate);
+
+        context.log('[DBG] startDateObj.toISOString():', startDateObj.toISOString());
+        context.log('[DBG] endDateObj.toISOString():', endDateObj.toISOString());
 
         requestPlan.input('start', mssql.DateTime2, startDateObj);
         requestPlan.input('end', mssql.DateTime2, endDateObj);
@@ -331,29 +340,92 @@ app.http('savetreatment', {
         // =================================================================================
         // PASO C: Generación Masiva de Eventos (El Bucle)
         // =================================================================================
-        
-        // Usar copias que mantengan la hora intacta
-        let currentDate = new Date(startDateObj.getTime()); // Fecha inicio seleccionada (con hora)
-        const limitDate = new Date(endDateObj.getTime());   // Fecha fin seleccionada
-        
-        // Ajustamos la fecha límite al final del día (23:59:59) para que no corte tomas de ese día
-        limitDate.setHours(23, 59, 59, 999);
 
+        // Parámetros de bucle
         const hoursToAdd = parseInt(frequencyValue);
-        
-        // Validación anti-bucle infinito
         if (isNaN(hoursToAdd) || hoursToAdd <= 0) {
-             throw new Error("La frecuencia debe ser un número positivo.");
+          throw new Error("La frecuencia debe ser un número positivo.");
         }
 
-        context.log(`Generando eventos desde ${currentDate.toISOString()} hasta ${limitDate.toISOString()} cada ${hoursToAdd} horas.`);
+        // Variables paralelas:
+        // - currentUtc: usamos startDateObj (instante en UTC) para contar iteraciones y comparaciones
+        // - currentWallClock: usamos la hora local (wall-clock) para construir el datetimeoffset que guardaremos
+        let currentUtc = new Date(startDateObj.getTime());
+        const limitUtc = new Date(endDateObj.getTime());
+        limitUtc.setHours(23, 59, 59, 999);
 
-        // --- BUCLE: Mientras la fecha actual sea menor o igual a la fecha límite ---
-        while (currentDate <= limitDate) {
-          
+        // Determinar timezone offset en minutos (cliente). Si no viene, fallback y aviso en logs.
+        const tzOffset = typeof timezoneOffsetMinutes === 'number' ? timezoneOffsetMinutes : null;
+        if (tzOffset === null) {
+          context.log('[WARN] timezoneOffsetMinutes no provisto por el cliente. Se usará 0 (UTC) para construir datetimeoffset.');
+        }
+
+        // Construir currentWallClock: intenta usar startDateWallClock (si viene) como referencia,
+        // si no viene, derivamos la wall-clock local restando el offset al instante UTC.
+        let currentWallClock;
+        if (startDateWallClock && tzOffset !== null) {
+          // startDateWallClock se espera en formato "YYYY-MM-DDTHH:mm:ss" (sin Z)
+          const m = startDateWallClock.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/);
+          if (m) {
+            const y = parseInt(m[1], 10);
+            const mo = parseInt(m[2], 10) - 1;
+            const d = parseInt(m[3], 10);
+            const hh = parseInt(m[4], 10);
+            const mm = parseInt(m[5], 10);
+            const ss = m[6] ? parseInt(m[6], 10) : 0;
+            // Construimos una Date con esos componentes (tratada como "local" por JS, pero sólo usaremos componentes)
+            currentWallClock = new Date(y, mo, d, hh, mm, ss, 0);
+          } else {
+            context.log('[WARN] startDateWallClock presente pero no coincide con el patrón. Se derivará desde startDate.');
+          }
+        }
+
+        if (!currentWallClock) {
+          // Derivamos la wall-clock a partir del instante UTC y del offset del cliente:
+          // wallClockMillis = utcMillis - (tzOffsetMinutes * 60000)
+          const derivedOffset = tzOffset !== null ? tzOffset : 0;
+          currentWallClock = new Date(startDateObj.getTime() - (derivedOffset * 60 * 1000));
+          context.log('[DBG] wallClock derivado desde startDateObj y timezoneOffsetMinutes:', currentWallClock.toString());
+        } else {
+          context.log('[DBG] wallClock inicial desde startDateWallClock:', currentWallClock.toString());
+        }
+
+        context.log(`Generando eventos desde (UTC) ${currentUtc.toISOString()} hasta (UTC) ${limitUtc.toISOString()} cada ${hoursToAdd} horas.`);
+        context.log('[DBG] timezoneOffsetMinutes usado:', tzOffset);
+
+        // Helper: formatear offset en ±HH:MM a partir de minutes (ej: 180 => -03:00)
+        function formatOffset(minutesOffset) {
+          // minutesOffset: valor como getTimezoneOffset() o el enviado por cliente.
+          // Si minutesOffset = 180 (UTC-3), la cadena debería ser "-03:00"
+          const sign = minutesOffset > 0 ? '-' : '+';
+          const abs = Math.abs(minutesOffset);
+          const hh = Math.floor(abs / 60).toString().padStart(2, '0');
+          const mm = (abs % 60).toString().padStart(2, '0');
+          return `${sign}${hh}:${mm}`;
+        }
+
+        // Helper: crear wall-clock string "YYYY-MM-DDTHH:mm:ss" desde Date local (componentes)
+        function formatWallClockString(dateObj) {
+          const pad = n => n.toString().padStart(2, '0');
+          return `${dateObj.getFullYear()}-${pad(dateObj.getMonth()+1)}-${pad(dateObj.getDate())}T${pad(dateObj.getHours())}:${pad(dateObj.getMinutes())}:${pad(dateObj.getSeconds())}`;
+        }
+
+        // --- BUCLE: Mientras currentUtc <= limitUtc ---
+        while (currentUtc <= limitUtc) {
+          // Construir wall-clock string para la inserción (mantiene hora local que el usuario vio)
+          const wallClockStr = formatWallClockString(currentWallClock);
+
+          // Construir offset (si tzOffset no provisto, usamos +00:00)
+          const offsetStr = tzOffset !== null ? formatOffset(tzOffset) : '+00:00';
+
+          const dtOffsetStr = `${wallClockStr}${offsetStr}`; // e.g. "2025-12-09T02:50:00-03:00"
+
+          context.log('[DBG] Insertando DoseRecord - wallClock:', wallClockStr, ' offset:', offsetStr, ' dtOffsetStr:', dtOffsetStr);
+
           const requestDose = new mssql.Request(transaction);
           requestDose.input('planId', mssql.Int, planID);
-          requestDose.input('schedTime', mssql.DateTime2, new Date(currentDate)); // usar DateTime2 para conservar hora
+          // Pasamos el string ISO con offset; driver interpreta correctamente para DateTimeOffset
+          requestDose.input('schedTime', mssql.DateTimeOffset, dtOffsetStr);
           requestDose.input('notes', mssql.NVarChar(500), notes || null);
 
           // Insertamos la dosis individual
@@ -362,9 +434,9 @@ app.http('savetreatment', {
             VALUES (@planId, @schedTime, 2, @notes); -- Status 2 = Pendiente
           `);
 
-          // CALCULAMOS LA SIGUIENTE TOMA
-          // Sumamos las horas en milisegundos para exactitud
-          currentDate = new Date(currentDate.getTime() + (hoursToAdd * 60 * 60 * 1000));
+          // Avanzar ambas representaciones: UTC (para límite) y wall-clock (para la hora local mostrada)
+          currentUtc = new Date(currentUtc.getTime() + (hoursToAdd * 60 * 60 * 1000));
+          currentWallClock.setHours(currentWallClock.getHours() + hoursToAdd);
         }
 
         // =================================================================================
