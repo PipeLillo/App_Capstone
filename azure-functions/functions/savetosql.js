@@ -240,7 +240,7 @@ app.http('getdoses', {
   }
 });
 // -------------------------------------------------------------
-// --- FUNCIÓN: savetreatment (Definitiva) ---
+// --- FUNCIÓN: savetreatment (Definitiva, CORREGIDA) ---
 // -------------------------------------------------------------
 app.http('savetreatment', {
   methods: ['POST'],
@@ -308,8 +308,13 @@ app.http('savetreatment', {
         requestPlan.input('dose', mssql.Decimal(10, 2), userDose);
         requestPlan.input('freqType', mssql.NVarChar(50), 'Horas'); // Asumimos horas por el input numérico
         requestPlan.input('freqVal', mssql.NVarChar(255), frequencyValue.toString());
-        requestPlan.input('start', mssql.Date, new Date(startDate));
-        requestPlan.input('end', mssql.Date, new Date(endDate)); // Guardamos fecha fin en el plan
+
+        // --- CORRECCIÓN IMPORTANTE: usar DateTime para conservar la hora ---
+        const startDateObj = new Date(startDate);
+        const endDateObj = new Date(endDate);
+
+        requestPlan.input('start', mssql.DateTime, startDateObj);
+        requestPlan.input('end', mssql.DateTime, endDateObj);
 
         const queryPlan = `
           INSERT INTO dbo.UserPlans 
@@ -327,8 +332,9 @@ app.http('savetreatment', {
         // PASO C: Generación Masiva de Eventos (El Bucle)
         // =================================================================================
         
-        let currentDate = new Date(startDate); // Fecha inicio seleccionada (con hora)
-        const limitDate = new Date(endDate);   // Fecha fin seleccionada
+        // Usar copias que mantengan la hora intacta
+        let currentDate = new Date(startDateObj.getTime()); // Fecha inicio seleccionada (con hora)
+        const limitDate = new Date(endDateObj.getTime());   // Fecha fin seleccionada
         
         // Ajustamos la fecha límite al final del día (23:59:59) para que no corte tomas de ese día
         limitDate.setHours(23, 59, 59, 999);
@@ -340,14 +346,14 @@ app.http('savetreatment', {
              throw new Error("La frecuencia debe ser un número positivo.");
         }
 
-        context.log(`Generando eventos desde ${currentDate} hasta ${limitDate} cada ${hoursToAdd} horas.`);
+        context.log(`Generando eventos desde ${currentDate.toISOString()} hasta ${limitDate.toISOString()} cada ${hoursToAdd} horas.`);
 
         // --- BUCLE: Mientras la fecha actual sea menor o igual a la fecha límite ---
         while (currentDate <= limitDate) {
           
           const requestDose = new mssql.Request(transaction);
           requestDose.input('planId', mssql.Int, planID);
-          requestDose.input('schedTime', mssql.DateTime, new Date(currentDate));
+          requestDose.input('schedTime', mssql.DateTime, new Date(currentDate)); // usar DateTime para conservar hora
           requestDose.input('notes', mssql.NVarChar(500), notes || null);
 
           // Insertamos la dosis individual
@@ -452,57 +458,53 @@ app.http('getfullevents', {
 // FUNCIÓN 6: deletedose (NUEVA FUNCIÓN)
 // ---------------------------------------------------------------------
 app.http('deletedose', {
-  methods: ['POST'],
-  authLevel: 'function',
-  handler: async (request, context) => {
+  methods: ['POST'],
+  authLevel: 'function',
+  handler: async (request, context) => {
 
-    try {
-      // 1. Obtener datos del cuerpo
-      const { recordID, firebaseUid } = await request.json();
+    try {
+      // 1. Obtener datos del cuerpo
+      const { recordID, firebaseUid } = await request.json();
 
-      // 2. Validación de Entrada
-      // recordID debe ser un número (bigint en tu BD)
-      if (typeof recordID !== 'number' || !firebaseUid) {
-        return {
-          status: 400,
-          body: "Se requiere un 'recordID' (número) y 'firebaseUid' válidos."
-        };
-      }
+      // 2. Validación de Entrada
+      // recordID debe ser un número (bigint en tu BD)
+      if (typeof recordID !== 'number' || !firebaseUid) {
+        return {
+          status: 400,
+          body: "Se requiere un 'recordID' (número) y 'firebaseUid' válidos."
+        };
+      }
 
-      await mssql.connect(baseDbConfig);
-      const dbRequest = new mssql.Request();
+      await mssql.connect(baseDbConfig);
+      const dbRequest = new mssql.Request();
 
-      // 3. Consulta SQL de Eliminación (Segura y Verifica Propiedad)
-      const query = `
-          DELETE DR
-          FROM dbo.DoseRecords AS DR
-          INNER JOIN dbo.UserPlans AS UP ON DR.PlanID = UP.PlanID
-          WHERE DR.RecordID = @recordID AND UP.OwnerFirebaseUID = @firebaseUid;
-      `;
-      
-      // 4. Asignación de parámetros
-      dbRequest.input('recordID', mssql.BigInt, recordID);
-      dbRequest.input('firebaseUid', mssql.NVarChar(128), firebaseUid); 
+      // 3. Consulta SQL de Eliminación (Segura y Verifica Propiedad)
+      const query = `
+          DELETE DR
+          FROM dbo.DoseRecords AS DR
+          INNER JOIN dbo.UserPlans AS UP ON DR.PlanID = UP.PlanID
+          WHERE DR.RecordID = @recordID AND UP.OwnerFirebaseUID = @firebaseUid;
+      `;
+      
+      // 4. Asignación de parámetros
+      dbRequest.input('recordID', mssql.BigInt, recordID);
+      dbRequest.input('firebaseUid', mssql.NVarChar(128), firebaseUid); 
 
-      const result = await dbRequest.query(query);
+      const result = await dbRequest.query(query);
 
-      // 5. Respuesta basada en el resultado
-      if (result.rowsAffected[0] > 0) {
-        return { status: 200, body: `Registro ${recordID} eliminado con éxito.` };
-      } else {
-        // 404 si el ID no existe o no pertenece al usuario
-        return { status: 404, body: `Registro ${recordID} no encontrado o no autorizado.` };
-      }
+      // 5. Respuesta basada en el resultado
+      if (result.rowsAffected[0] > 0) {
+        return { status: 200, body: `Registro ${recordID} eliminado con éxito.` };
+      } else {
+        // 404 si el ID no existe o no pertenece al usuario
+        return { status: 404, body: `Registro ${recordID} no encontrado o no autorizado.` };
+      }
 
-    } catch (err) {
-      context.log('Error en deletedose:', err);
-      return { status: 500, body: "Error interno al eliminar el registro." };
-    } finally {
-      mssql.close();
-    }
-  }
+    } catch (err) {
+      context.log('Error en deletedose:', err);
+      return { status: 500, body: "Error interno al eliminar el registro." };
+    } finally {
+      mssql.close();
+    }
+  }
 });
-
-
-
-
